@@ -176,7 +176,7 @@ def aggregate_stance(df: pd.DataFrame) -> pd.DataFrame:
     return share.sort_index()
 
 
-def plot_stance(share: pd.DataFrame, ax, title: str, note: str = ""):
+def plot_stance(share: pd.DataFrame, ax, title: str, note: str = "", show_event_labels: bool = True):
     if share.empty:
         ax.text(0.5, 0.5, "no data", ha="center", va="center", transform=ax.transAxes)
         ax.set_title(title)
@@ -195,7 +195,7 @@ def plot_stance(share: pd.DataFrame, ax, title: str, note: str = ""):
     ax.legend(loc="upper left", fontsize=8, framealpha=0.9)
     if note:
         ax.text(0.99, 0.02, note, ha="right", va="bottom", transform=ax.transAxes, fontsize=7, color="#666")
-    draw_events(ax)
+    draw_events(ax, show_labels=show_event_labels)
 
 
 def render(df: pd.DataFrame | None = None, live: bool = False, limit: int | None = None, output: Path | None = None) -> Path:

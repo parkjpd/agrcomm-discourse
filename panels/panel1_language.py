@@ -106,7 +106,7 @@ def _normalize_to_share(df: pd.DataFrame) -> pd.DataFrame:
     return share.sort_index()
 
 
-def _plot_stacked(ax, share_df: pd.DataFrame, title: str):
+def _plot_stacked(ax, share_df: pd.DataFrame, title: str, show_event_labels: bool = True):
     kw = load_keywords()["buckets"]
     cols = ["right_loaded", "left_loaded", "neutral"]
     colors = [kw[c]["color"] for c in cols]
@@ -129,7 +129,7 @@ def _plot_stacked(ax, share_df: pd.DataFrame, title: str):
     ax.grid(axis="y", alpha=0.2)
     ax.legend(loc="upper left", fontsize=8, framealpha=0.9)
 
-    draw_events(ax)
+    draw_events(ax, show_labels=show_event_labels)
 
 
 def render(output: Path | None = None) -> Path:
