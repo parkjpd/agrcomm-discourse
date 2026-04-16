@@ -10,6 +10,13 @@ from typing import Any
 import yaml
 
 ROOT = Path(__file__).parent
+
+# pick up .env if present. importing here means any module using common inherits it.
+try:
+    from dotenv import load_dotenv
+    load_dotenv(ROOT / ".env")
+except ImportError:
+    pass
 CONFIG_DIR = ROOT / "config"
 DATA_DIR = ROOT / "data"
 SAMPLES_DIR = DATA_DIR / "samples"
