@@ -64,7 +64,7 @@ def render(output: Path | None = None, live_stance: bool = False, live_topic: bo
     lang_note = "source: " + ", ".join(sorted(set(p1.load_news_volumes().get("source", pd.Series(["none"])).unique().tolist())))
 
     # ---- figure ----
-    fig, axes = plt.subplots(3, 1, figsize=(16, 12), sharex=True, gridspec_kw={"height_ratios": [1, 1, 1.2]})
+    fig, axes = plt.subplots(3, 1, figsize=(16, 14), sharex=True, gridspec_kw={"height_ratios": [1, 1, 1.3], "hspace": 0.28})
 
     # top: language (shows event labels)
     p1._plot_stacked(axes[0], news_share, "panel 1 — language share (news)", show_event_labels=True)
@@ -84,7 +84,16 @@ def render(output: Path | None = None, live_stance: bool = False, live_topic: bo
         fontsize=13,
         y=0.995,
     )
-    fig.tight_layout(rect=(0, 0, 1, 0.98))
+    # event category legend in the bottom-right corner
+    from matplotlib.lines import Line2D
+    from viz.event_overlay import CATEGORY_STYLES
+    handles = [
+        Line2D([0], [0], color=s["color"], linestyle=s["linestyle"], lw=s["lw"], label=cat)
+        for cat, s in CATEGORY_STYLES.items() if cat in ("election", "enforcement", "pandemic", "legal")
+    ]
+    fig.legend(handles=handles, loc="lower center", ncol=len(handles), fontsize=8, framealpha=0.9, bbox_to_anchor=(0.5, -0.01))
+
+    fig.tight_layout(rect=(0, 0.01, 1, 0.98))
     fig.savefig(output, dpi=140, bbox_inches="tight")
     plt.close(fig)
     return output
