@@ -54,33 +54,35 @@ def _count_keywords_in_text(df: pd.DataFrame, text_col: str = "text") -> pd.Data
 
 
 def load_news_volumes() -> pd.DataFrame:
-    """combine processed volumes (gdelt + media cloud) if present, else derive from synthetic news."""
+    """combine real volumes (gdelt + media cloud) with synthetic fallback for any quarters not
+    yet covered by real data. lets the chart stay complete while collectors are still in-flight."""
     frames = []
     gdelt_path = PROCESSED_DIR / "panel1_news_volumes.csv"
     mc_path = PROCESSED_DIR / "panel1_news_volumes_mc.csv"
     if gdelt_path.exists():
         g = pd.read_csv(gdelt_path)
-        # sum across terms within bucket per quarter
         g = g.groupby(["date", "bucket"])["count"].sum().reset_index()
         g["source"] = "gdelt"
         frames.append(g)
     if mc_path.exists():
-        m = pd.read_csv(mc_path)
-        frames.append(m)
+        frames.append(pd.read_csv(mc_path))
 
-    if frames:
-        return pd.concat(frames, ignore_index=True)
-
-    # fallback: derive volume from synthetic news corpus. bootstrap if missing.
+    # synthetic fills any quarter not covered by real data
     syn_path = SAMPLES_DIR / "news.csv"
     if not syn_path.exists():
         from scripts.make_samples import main as make
         make()
-    if not syn_path.exists():
-        return pd.DataFrame(columns=["date", "bucket", "count", "source"])
     syn = pd.read_csv(syn_path)
     syn["text"] = syn["title"].fillna("") + " " + syn["text"].fillna("")
-    return _count_keywords_in_text(syn).assign(source="synthetic_news")
+    syn_counts = _count_keywords_in_text(syn).assign(source="synthetic_news")
+
+    if not frames:
+        return syn_counts
+
+    real = pd.concat(frames, ignore_index=True)
+    covered_quarters = set(real["date"].unique())
+    fill = syn_counts[~syn_counts["date"].isin(covered_quarters)]
+    return pd.concat([real, fill], ignore_index=True)
 
 
 def load_reddit_volumes() -> pd.DataFrame:
