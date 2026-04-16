@@ -60,29 +60,43 @@ def pull_volumes(start: date = date(2010, 1, 1), end: date = date(2016, 12, 31))
                 rows.append({"date": q.isoformat(), "bucket": bucket_name, "count": cached, "source": "mediacloud"})
                 continue
 
-            try:
-                r = requests.get(
-                    ENDPOINT,
-                    params={
-                        "q": query,
-                        "start_date": q.isoformat(),
-                        "end_date": q_end.isoformat(),
-                        "collections": "34412234",
-                        "platform": "online_news",
-                    },
-                    headers={"Authorization": f"Token {key}"},
-                    timeout=30,
-                )
-                r.raise_for_status()
-                data = r.json()
-                count = int(data.get("count", data.get("total", 0)))
-            except Exception as e:
-                print(f"  media cloud failed {q} {bucket_name}: {e}")
-                count = 0
+            count = None
+            for attempt in range(3):
+                try:
+                    r = requests.get(
+                        ENDPOINT,
+                        params={
+                            "q": query,
+                            "start_date": q.isoformat(),
+                            "end_date": q_end.isoformat(),
+                            "collections": "34412234",
+                            "platform": "online_news",
+                        },
+                        headers={"Authorization": f"Token {key}"},
+                        timeout=60,
+                    )
+                    r.raise_for_status()
+                    data = r.json()
+                    # v4 api: {"count": {"relevant": N, "total": N}}
+                    cf = data.get("count", {})
+                    if isinstance(cf, dict):
+                        count = int(cf.get("relevant", 0))
+                    else:
+                        count = int(cf or data.get("total", 0))
+                    break
+                except Exception as e:
+                    if attempt == 2:
+                        print(f"  media cloud failed {q} {bucket_name}: {type(e).__name__}: {e}")
+                    else:
+                        time.sleep(2.0 * (attempt + 1))
 
-            cache_put(NAMESPACE, req, count, summary=f"{bucket_name} {q}")
-            rows.append({"date": q.isoformat(), "bucket": bucket_name, "count": count, "source": "mediacloud"})
-            time.sleep(0.3)
+            # only cache real responses; leave failures uncached so re-runs can retry
+            if count is not None:
+                cache_put(NAMESPACE, req, count, summary=f"{bucket_name} {q}")
+                rows.append({"date": q.isoformat(), "bucket": bucket_name, "count": count, "source": "mediacloud"})
+            else:
+                rows.append({"date": q.isoformat(), "bucket": bucket_name, "count": 0, "source": "mediacloud"})
+            time.sleep(0.5)
 
         # advance to next quarter
         if q.month >= 10:

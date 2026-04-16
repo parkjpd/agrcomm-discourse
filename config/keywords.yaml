@@ -46,18 +46,14 @@ buckets:
       - guest worker
 
 # topic anchor - every text must contain at least one of these to count as "about migrant farm labor".
-# without this filter the news buckets get polluted with generic immigration coverage.
+# intentionally narrow. loose anchors like "farm" or "field" pull in generic coverage
+# (e.g. "illegals invasion" + "farm pest" matches unrelated articles).
 topic_anchor:
   require_any:
-    - farm
     - farmworker
     - farm worker
-    - agricultural
-    - agriculture
-    - crop
-    - harvest
-    - produce
-    - dairy
-    - orchard
-    - field
     - H-2A
+    - agricultural worker
+    - migrant worker
+    - migrant labor
+    - seasonal worker
