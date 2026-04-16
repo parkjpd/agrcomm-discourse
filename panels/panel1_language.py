@@ -71,8 +71,11 @@ def load_news_volumes() -> pd.DataFrame:
     if frames:
         return pd.concat(frames, ignore_index=True)
 
-    # fallback: derive volume from synthetic news corpus
+    # fallback: derive volume from synthetic news corpus. bootstrap if missing.
     syn_path = SAMPLES_DIR / "news.csv"
+    if not syn_path.exists():
+        from scripts.make_samples import main as make
+        make()
     if not syn_path.exists():
         return pd.DataFrame(columns=["date", "bucket", "count", "source"])
     syn = pd.read_csv(syn_path)
@@ -81,8 +84,12 @@ def load_news_volumes() -> pd.DataFrame:
 
 
 def load_reddit_volumes() -> pd.DataFrame:
-    """quarterly per-bucket counts from reddit posts."""
+    """quarterly per-bucket counts from reddit posts. auto-generates synthetic samples if missing."""
     candidates = [PROCESSED_DIR / "reddit_posts.csv", SAMPLES_DIR / "reddit.csv"]
+    if not any(p.exists() for p in candidates):
+        # bootstrap synthetic samples if neither live nor sample data exists yet
+        from scripts.make_samples import main as make
+        make()
     for p in candidates:
         if p.exists():
             df = pd.read_csv(p)
