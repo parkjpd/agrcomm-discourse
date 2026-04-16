@@ -1,0 +1,63 @@
+# panel 1 keyword buckets. these are the exact strings we count in article/post text.
+#
+# buckets are SYMMETRIC by design (spec section 10 bias management).
+# every loaded right-coded term has a loaded left-coded counterpart.
+# neutral terms are their own bucket so we can see when coverage is just "news about the topic"
+# vs actively framed in one direction.
+#
+# match_mode: case-insensitive substring match. for multi-word terms we require exact adjacency.
+# variants lets us fold plurals + contractions without blowing up the bucket list.
+
+buckets:
+  right_loaded:
+    display: "enforcement-framed"
+    color: "#c23b22"
+    terms:
+      - illegal alien
+      - illegal immigrant
+      - illegals
+      - criminal alien
+      - border crisis
+      - mass deportation
+      - invasion
+
+  left_loaded:
+    display: "labor-framed"
+    color: "#2e75b6"
+    terms:
+      - undocumented worker
+      - undocumented immigrant
+      - undocumented
+      - immigrant worker
+      - immigrant labor
+      - essential worker
+      - farmworker
+      - farm worker
+
+  neutral:
+    display: "neutral / descriptive"
+    color: "#7f7f7f"
+    terms:
+      - migrant worker
+      - migrant labor
+      - agricultural worker
+      - seasonal worker
+      - H-2A
+      - guest worker
+
+# topic anchor - every text must contain at least one of these to count as "about migrant farm labor".
+# without this filter the news buckets get polluted with generic immigration coverage.
+topic_anchor:
+  require_any:
+    - farm
+    - farmworker
+    - farm worker
+    - agricultural
+    - agriculture
+    - crop
+    - harvest
+    - produce
+    - dairy
+    - orchard
+    - field
+    - H-2A

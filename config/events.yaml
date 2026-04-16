@@ -1,0 +1,47 @@
+# policy event timeline. every panel reads this and overlays markers on the same x-axis.
+# update the timeline here, all charts regenerate.
+#
+# date format: YYYY-MM-DD (first day of month if day-of-month is uncertain)
+# shown: label that actually prints on the chart - keep short or it overlaps
+# category: election | policy | enforcement | pandemic | legal
+#   - elections get a solid line, everything else dashed
+
+events:
+  - date: 2016-11-08
+    shown: "trump elected"
+    category: election
+    note: "inauguration jan 2017; enforcement expansion followed immediately"
+
+  - date: 2017-01-27
+    shown: "travel ban / ICE expansion"
+    category: enforcement
+    note: "executive orders 13767 and 13768"
+
+  - date: 2018-06-01
+    shown: "family separation peak"
+    category: enforcement
+    note: "zero-tolerance policy at southern border"
+
+  - date: 2020-03-13
+    shown: "COVID / essential workers"
+    category: pandemic
+    note: "DHS designates agricultural workers as essential critical infrastructure"
+
+  - date: 2021-01-20
+    shown: "biden inaugurated"
+    category: election
+    note: "interim enforcement priorities memo issued feb 2021"
+
+  - date: 2023-05-11
+    shown: "title 42 ends"
+    category: legal
+    note: "covid-era border expulsion authority expires"
+
+  - date: 2024-11-05
+    shown: "trump re-elected"
+    category: election
+
+  - date: 2025-01-20
+    shown: "mass deportation ops begin"
+    category: enforcement
+    note: "agricultural labor shortages reported across CA, FL, OH through spring"

@@ -1,0 +1,57 @@
+# data source config. API keys live in .env, not here.
+
+gdelt:
+  # GDELT DOC 2.0 API. free, no auth. coverage starts ~2017.
+  base_url: "https://api.gdeltproject.org/api/v2/doc/doc"
+  mode: "artlist"
+  max_records_per_query: 250
+  # query runs once per quarter to stay inside API limits
+  bucket: quarterly
+
+mediacloud:
+  # media cloud academic API. covers 2010+. requires MEDIACLOUD_API_KEY.
+  base_url: "https://api.mediacloud.org/api/v2"
+  collections:
+    - 34412234  # us mainstream political blogs
+    - 57         # us top online news
+  bucket: quarterly
+
+reddit:
+  # historical (pre-2023) via pushshift archive dumps. live (2023+) via PRAW.
+  subreddits:
+    - politics
+    - news
+    - farming
+    - immigration
+    - Ohio
+    - California
+    - Florida
+    - Texas
+  target_posts: 50000
+  # how to split across years - weighted toward recent since older reddit is sparser
+  year_weights:
+    default: 1.0
+    "2024": 2.0
+    "2025": 2.0
+    "2026": 2.0
+
+panel2:
+  model: "claude-haiku-4-5-20251001"
+  max_concurrency: 8
+  expected_input_tokens_per_call: 500
+  expected_output_tokens_per_call: 5
+  # kappa thresholds per spec section 6
+  kappa_ship: 0.6
+  kappa_iterate: 0.4
+  validation_sample_size: 200
+
+panel3:
+  embedding_model: "sentence-transformers/all-MiniLM-L6-v2"
+  min_topic_size: 30
+  nr_topics: "auto"
+  # target final cluster count after hand-labeling merge/drop
+  target_clusters: 10
+
+cache:
+  path: "data/cache.db"
+  ttl_days: 90

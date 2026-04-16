@@ -1,0 +1,61 @@
+# panel 2 stance classification rubric. the prompt below is what claude haiku sees for every post.
+#
+# IMPORTANT: indicators must be symmetric. same count each way. any asymmetry shows up as
+# classifier bias in the kappa validation step.
+
+target: "migrant farm labor in the united states"
+
+labels:
+  - pro_enforcement
+  - pro_immigrant_labor
+  - neutral_mixed
+
+pro_enforcement_indicators:
+  - "calls for stricter border enforcement or ICE action against farmworkers"
+  - "describes migrant workers as a drain on resources, wages, or services"
+  - "frames undocumented labor as illegal/criminal regardless of work context"
+  - "supports mass deportation even if it causes crop losses"
+  - "blames migrant labor for depressing native-worker wages"
+
+pro_immigrant_labor_indicators:
+  - "defends migrant workers as economically essential to US agriculture"
+  - "describes enforcement as causing humanitarian harm to farmworker families"
+  - "calls for legalization, visa expansion, or path to citizenship for farm labor"
+  - "frames farmworkers as exploited by employers rather than as lawbreakers"
+  - "cites crop losses or rising food prices as reasons to protect migrant labor"
+
+neutral_mixed_indicators:
+  - "reports facts without taking a side"
+  - "expresses personal mixed feelings or tradeoffs"
+  - "asks a question or seeks information"
+  - "off-topic, spam, or not actually about migrant farm labor"
+
+# the prompt that goes to haiku. {post} is the full text of the post being classified.
+prompt: |
+  You are classifying the stance of a social media post about migrant farm labor in the US.
+
+  Classify the post into EXACTLY ONE of these three labels:
+    1. pro_enforcement - supports stricter immigration enforcement, deportation, or describes migrant farm labor as a problem
+    2. pro_immigrant_labor - defends migrant farmworkers, calls for legalization, or describes enforcement as harmful
+    3. neutral_mixed - reports facts without taking a side, expresses mixed feelings, asks a question, or is off-topic/spam
+
+  Pro-enforcement indicators (any one is enough):
+  {pro_enforcement_bullets}
+
+  Pro-immigrant-labor indicators (any one is enough):
+  {pro_immigrant_labor_bullets}
+
+  Neutral/mixed indicators:
+  {neutral_mixed_bullets}
+
+  Rules:
+  - Pick the SINGLE best fit. If the post shows indicators for both sides, pick neutral_mixed.
+  - Do not infer political party. Classify the actual content, not who you think the author is.
+  - If the post is not actually about migrant farm labor (just generic immigration, unrelated news), pick neutral_mixed.
+
+  Post:
+  \"\"\"
+  {post}
+  \"\"\"
+
+  Respond with ONLY the label string (pro_enforcement, pro_immigrant_labor, or neutral_mixed). No explanation.
