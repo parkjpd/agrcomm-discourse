@@ -1,0 +1,19 @@
+requests>=2.31
+pyyaml>=6.0
+matplotlib>=3.8
+pandas>=2.1
+numpy>=1.26
+python-dotenv>=1.0
+anthropic>=0.39
+praw>=7.7
+gdeltdoc>=1.5
+scikit-learn>=1.3
+tqdm>=4.66
+
+# panel 3 - heavy deps. comment out if only running panels 1+2.
+bertopic>=0.16
+sentence-transformers>=2.7
+
+# optional - deep GDELT via BigQuery. uncomment to enable.
+# google-cloud-bigquery>=3.13
+# db-dtypes>=1.2
