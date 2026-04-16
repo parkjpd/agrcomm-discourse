@@ -23,13 +23,17 @@ def _parse_date(s: str | date) -> date:
     return datetime.strptime(s, "%Y-%m-%d").date()
 
 
-def draw(ax: Axes, label_events: bool = True, y_label_pos: float = 0.98) -> None:
+def draw(ax: Axes, label_events: bool = True, y_label_pos: float = 0.98, show_labels: bool | None = None) -> None:
     """Overlay every event from config/events.yaml onto ax."""
     events = load_events()
     for ev in events:
         d = _parse_date(ev["date"])
         style = CATEGORY_STYLES.get(ev["category"], CATEGORY_STYLES["policy"])
         ax.axvline(d, **style)
+
+    # accept either old name (label_events) or new name (show_labels)
+    if show_labels is not None:
+        label_events = show_labels
 
     if label_events:
         # labels sit along the top. small rotation for readability.
