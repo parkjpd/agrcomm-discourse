@@ -171,42 +171,35 @@ def _prevalence_per_year(df: pd.DataFrame, topic_col: str) -> pd.DataFrame:
 # ---------- heatmap ----------
 
 def plot_heatmap(share: pd.DataFrame, ax, title: str, note: str = "", show_event_labels: bool = False):
+    """heatmap uses date-based x-axis so it aligns with panels 1+2 in the combined figure."""
+    from datetime import date
+    import matplotlib.dates as mdates
+
     if share.empty:
         ax.text(0.5, 0.5, "no topics", ha="center", va="center", transform=ax.transAxes)
         ax.set_title(title)
         return
 
-    data = share.values
-    im = ax.imshow(data, aspect="auto", cmap="viridis", interpolation="nearest")
-    ax.set_yticks(np.arange(len(share.index)))
+    years = share.columns.astype(int).tolist()
+    x_edges = [date(y, 1, 1) for y in years] + [date(max(years) + 1, 1, 1)]
+    y_edges = np.arange(len(share.index) + 1)
+
+    mesh = ax.pcolormesh(x_edges, y_edges, share.values, cmap="viridis", shading="flat")
+    ax.set_yticks(np.arange(len(share.index)) + 0.5)
     ax.set_yticklabels([TOPIC_DISPLAY.get(t, t) for t in share.index], fontsize=9)
-    ax.set_xticks(np.arange(len(share.columns)))
-    ax.set_xticklabels(share.columns.astype(int), fontsize=9)
+    ax.invert_yaxis()
     ax.set_xlabel("year")
     ax.set_title(title)
+    ax.xaxis.set_major_locator(mdates.YearLocator(2))
+    ax.xaxis.set_major_formatter(mdates.DateFormatter("%Y"))
 
-    cbar = plt.colorbar(im, ax=ax, pad=0.01)
+    cbar = plt.colorbar(mesh, ax=ax, pad=0.01)
     cbar.set_label("share of year's discourse")
 
-    # event markers as vertical lines at fractional year positions.
-    # heatmap x-axis is integer year indices so we compute (year index + month/12 offset).
-    from viz.event_overlay import CATEGORY_STYLES
-    from common import load_events
-    years = share.columns.astype(int).tolist()
-    for ev in load_events():
-        ev_year = int(str(ev["date"])[:4])
-        ev_month = int(str(ev["date"])[5:7])
-        if ev_year not in years:
-            continue
-        frac = ev_month / 12.0
-        x = years.index(ev_year) + frac - 0.5
-        style = CATEGORY_STYLES.get(ev["category"], CATEGORY_STYLES["policy"])
-        ax.axvline(x, **style)
-        if show_event_labels:
-            ax.text(x, -0.6, ev["shown"], rotation=90, fontsize=6, ha="left", va="bottom", color="#222")
+    draw_events(ax, show_labels=show_event_labels)
 
     if note:
-        ax.text(1.0, -0.12, note, ha="right", va="top", transform=ax.transAxes, fontsize=7, color="#666")
+        ax.text(1.0, -0.18, note, ha="right", va="top", transform=ax.transAxes, fontsize=7, color="#666")
 
 
 def render(live: bool = False, limit: int | None = None, output: Path | None = None) -> Path:
