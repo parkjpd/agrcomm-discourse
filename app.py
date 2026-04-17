@@ -114,6 +114,45 @@ with st.sidebar:
 st.title("public discourse on migrant farm labor, 2010–2026")
 st.caption("AGRCOMM 2330 case study — language / stance / topic panels with policy event overlay")
 
+# data-source badges showing what's real vs synthetic
+def _data_badges():
+    badges = []
+    if (PROCESSED_DIR / "panel1_news_volumes_mc.csv").exists():
+        badges.append(("news (panel 1)", "live media cloud · 2010-2026", True))
+    else:
+        badges.append(("news (panel 1)", "synthetic", False))
+
+    stance_path = PROCESSED_DIR / "reddit_posts_stance.csv"
+    if stance_path.exists():
+        try:
+            n = sum(1 for _ in open(stance_path)) - 1
+            # check if any row was haiku-classified (vs truth labels)
+            sample = pd.read_csv(stance_path, nrows=5)
+            is_live = "stance" in sample.columns and sample["stance"].notna().any()
+            badges.append(("stance (panel 2)", f"haiku · {n} posts" if is_live else f"synthetic · {n} posts", is_live))
+        except Exception:
+            badges.append(("stance (panel 2)", "unknown", False))
+    else:
+        badges.append(("stance (panel 2)", "synthetic", False))
+
+    corpus = load_corpus()
+    if not corpus.empty and "true_topic" in corpus.columns:
+        badges.append(("topic (panel 3)", f"synthetic truth · {len(corpus):,} docs", False))
+    else:
+        badges.append(("topic (panel 3)", "—", False))
+
+    if (PROCESSED_DIR / "panel4_futures_quarterly.csv").exists():
+        badges.append(("futures (panel 4)", "live yfinance · 5 tickers", True))
+    else:
+        badges.append(("futures (panel 4)", "—", False))
+    return badges
+
+_badge_cols = st.columns(4)
+for col, (label, detail, is_live) in zip(_badge_cols, _data_badges()):
+    with col:
+        icon = "🟢" if is_live else "🟡"
+        st.markdown(f"**{icon} {label}**  \n`{detail}`")
+
 
 # ---------- tabs ----------
 
@@ -136,6 +175,40 @@ with tab_over:
 
     fig = pc.three_panel(news_s, stance_s, topic_s)
     st.plotly_chart(fig, width="stretch")
+
+    # download buttons for the static presentation assets
+    dcol1, dcol2, dcol3 = st.columns(3)
+    from pathlib import Path as _P
+    tp_png = _P("output/three_panel.png")
+    if tp_png.exists():
+        with dcol1:
+            st.download_button(
+                "⬇ combined figure (PNG)",
+                data=tp_png.read_bytes(),
+                file_name="three_panel.png",
+                mime="image/png",
+                width="stretch",
+            )
+    findings_md = _P("output/findings.md")
+    if findings_md.exists():
+        with dcol2:
+            st.download_button(
+                "⬇ findings writeup (MD)",
+                data=findings_md.read_bytes(),
+                file_name="findings.md",
+                mime="text/markdown",
+                width="stretch",
+            )
+    stance_csv = PROCESSED_DIR / "reddit_posts_stance.csv"
+    if stance_csv.exists():
+        with dcol3:
+            st.download_button(
+                "⬇ haiku-labeled posts (CSV)",
+                data=stance_csv.read_bytes(),
+                file_name="reddit_posts_stance.csv",
+                mime="text/csv",
+                width="stretch",
+            )
 
     # --- findings at a glance ---
     st.markdown("##### findings at a glance")
