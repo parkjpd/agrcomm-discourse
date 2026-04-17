@@ -333,6 +333,72 @@ with tab_stance:
                 text = str(row.get("text", ""))
                 st.write(text[:600] + ("…" if len(text) > 600 else ""))
 
+    # era comparison tool
+    if not raw.empty and "stance" in raw.columns:
+        st.markdown("##### era comparison")
+        st.caption("pick two eras and see how the stance distribution differs — direct answer to 'did the mix shift?'")
+        era_options = {
+            "pre-trump (2010-2016)":  ("2010-01-01", "2016-10-31"),
+            "trump 1 (2017-2020Q1)":  ("2016-11-01", "2020-02-29"),
+            "covid (2020Q2-2020)":    ("2020-03-01", "2021-01-19"),
+            "biden (2021-2024Q3)":    ("2021-01-20", "2024-11-04"),
+            "trump 2 (2024Q4-)":      ("2024-11-05", "2026-12-31"),
+        }
+        ec1, ec2 = st.columns(2)
+        era_a = ec1.selectbox("era A", list(era_options.keys()), index=1, key="era_a")
+        era_b = ec2.selectbox("era B", list(era_options.keys()), index=4, key="era_b")
+
+        raw_t = raw.copy()
+        if "date" in raw_t.columns:
+            raw_t["date"] = pd.to_datetime(raw_t["date"])
+
+        def _dist(key):
+            start, end = era_options[key]
+            sub = raw_t[(raw_t["date"] >= start) & (raw_t["date"] <= end) & raw_t["stance"].notna()]
+            if sub.empty:
+                return pd.Series([0, 0, 0], index=list(STANCE_LABELS))
+            counts = sub["stance"].value_counts()
+            return pd.Series([counts.get(l, 0) for l in STANCE_LABELS], index=list(STANCE_LABELS))
+
+        dist_a = _dist(era_a)
+        dist_b = _dist(era_b)
+        total_a, total_b = dist_a.sum(), dist_b.sum()
+        share_a = (dist_a / total_a).fillna(0) if total_a else dist_a
+        share_b = (dist_b / total_b).fillna(0) if total_b else dist_b
+
+        import plotly.graph_objects as go
+        fig = go.Figure()
+        fig.add_trace(go.Bar(
+            x=list(STANCE_LABELS), y=share_a.values, name=era_a,
+            marker_color=[pc.STANCE_COLORS[l] for l in STANCE_LABELS],
+            marker_pattern_shape=".",
+            text=[f"{v:.0%}" for v in share_a.values], textposition="outside",
+        ))
+        fig.add_trace(go.Bar(
+            x=list(STANCE_LABELS), y=share_b.values, name=era_b,
+            marker_color=[pc.STANCE_COLORS[l] for l in STANCE_LABELS],
+            marker_line_color="#000", marker_line_width=2,
+            text=[f"{v:.0%}" for v in share_b.values], textposition="outside",
+        ))
+        fig.update_layout(
+            barmode="group",
+            yaxis_tickformat=".0%",
+            yaxis_range=[0, 1],
+            height=380,
+            title=f"stance distribution — {era_a} ({total_a:,} posts) vs {era_b} ({total_b:,} posts)",
+            legend=dict(orientation="h", yanchor="bottom", y=-0.3),
+        )
+        st.plotly_chart(fig, width="stretch")
+
+        # delta table
+        delta = pd.DataFrame({
+            "label": list(STANCE_LABELS),
+            f"{era_a}": [f"{v:.1%}" for v in share_a.values],
+            f"{era_b}": [f"{v:.1%}" for v in share_b.values],
+            "delta (B-A)": [f"{(share_b.values[i] - share_a.values[i]) * 100:+.1f} pp" for i in range(len(STANCE_LABELS))],
+        })
+        st.dataframe(delta, width="stretch", hide_index=True)
+
     with st.expander("rubric used by classifier"):
         rub = load_stance_rubric()
         st.write("**pro-enforcement indicators:**")
