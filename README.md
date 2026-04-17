@@ -29,6 +29,20 @@ outputs land in `output/`:
 - `three_panel.png`  ← the money shot for the presentation
 - `findings.md`  ← data-driven writeup skeleton
 
+## interactive dashboard
+
+```
+streamlit run app.py
+```
+
+opens an interactive plotly dashboard at http://localhost:8501 with:
+- **overview** — combined three-panel figure
+- **panel 1** — language tab with news / reddit / both toggle + era comparison table
+- **panel 2** — stance tab with sample-posts viewer by classified label + rubric expander
+- **panel 3** — topic tab with heatmap + topic-over-time line chart
+- **data** — raw rows browser with year filter + CSV download
+- year-range slider in the sidebar filters all tabs simultaneously
+
 demo mode runs on synthetic samples with hand-tuned era shifts so the charts look legible. it is NOT a real finding.
 
 ## running on real data
