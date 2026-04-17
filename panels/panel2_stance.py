@@ -119,25 +119,48 @@ async def _classify_batch(texts: list[str], model: str, max_concurrency: int = 8
 
 def classify_dataframe(df: pd.DataFrame, text_col: str = "text", limit: int | None = None, live: bool = True) -> pd.DataFrame:
     """
-    return df with a new `stance` column.
-    - live=True: call haiku
-    - live=False: if df has `true_stance`, use it; else rule-based fallback
+    return df with a new `stance` column. resolution order:
+      1. haiku cache (fastest, always preferred if the post has been classified before)
+      2. if live=True: call haiku for any uncached posts
+      3. if live=False: fall back to df's `true_stance` column, then to rule-based
     """
     df = df.copy()
-    if not live:
-        if "true_stance" in df.columns:
-            df["stance"] = df["true_stance"]
-            return df
-        print("  classify_dataframe(live=False) with no true_stance: using keyword fallback")
-        df["stance"] = df[text_col].fillna("").astype(str).map(_rule_based_fallback)
-        return df
-
     if limit:
         df = df.head(limit).copy()
+
     texts = df[text_col].fillna("").astype(str).tolist()
     cfg = load_sources()["panel2"]
-    labels = asyncio.run(_classify_batch(texts, cfg["model"], cfg.get("max_concurrency", 8)))
-    df["stance"] = labels
+    model = cfg["model"]
+    prompt = _build_system_prompt()
+
+    # pull cache hits first
+    cached_labels: list[str | None] = []
+    uncached_idx: list[int] = []
+    for i, t in enumerate(texts):
+        req = {"prompt_template": prompt, "post": t, "model": model}
+        cached = cache_get(NAMESPACE, req)
+        cached_labels.append(cached)
+        if cached is None:
+            uncached_idx.append(i)
+
+    if uncached_idx:
+        if live:
+            print(f"  stance: {len(texts) - len(uncached_idx)} cached, {len(uncached_idx)} new haiku calls")
+            new_texts = [texts[i] for i in uncached_idx]
+            new_labels = asyncio.run(_classify_batch(new_texts, model, cfg.get("max_concurrency", 8)))
+            for i, lbl in zip(uncached_idx, new_labels):
+                cached_labels[i] = lbl
+        elif "true_stance" in df.columns:
+            # fallback for non-live runs: synthetic truth labels for uncached rows
+            truths = df["true_stance"].astype(str).tolist()
+            for i in uncached_idx:
+                cached_labels[i] = truths[i]
+        else:
+            # no cache, no truth, no live - rule-based fallback
+            for i in uncached_idx:
+                cached_labels[i] = _rule_based_fallback(texts[i])
+
+    df["stance"] = cached_labels
     return df
 
 
@@ -203,27 +226,55 @@ def plot_stance(share: pd.DataFrame, ax, title: str, note: str = "", show_event_
     draw_events(ax, show_labels=show_event_labels)
 
 
+def _existing_stance_is_haiku(path: Path) -> bool:
+    """heuristic: if the file exists and has a `stance` column whose distribution matches
+    haiku's conservative-neutral tendency (>50% neutral_mixed on the 3000 stratified subset),
+    treat it as authoritative live data we shouldn't overwrite."""
+    if not path.exists():
+        return False
+    try:
+        sample = pd.read_csv(path, nrows=5000)
+        if "stance" not in sample.columns:
+            return False
+        # haiku labels on 3k synthetic subset settle around ~62% neutral_mixed
+        labeled = sample["stance"].dropna()
+        if len(labeled) < 200:
+            return False
+        neut = (labeled == "neutral_mixed").mean()
+        # if synthetic truth was used the mix is uniform (~33% each); haiku skews much higher on neutral
+        return neut > 0.45
+    except Exception:
+        return False
+
+
 def render(df: pd.DataFrame | None = None, live: bool = False, limit: int | None = None, output: Path | None = None) -> Path:
     output = output or (OUTPUT_DIR / "panel2_stance.png")
-    if df is None:
-        df = reddit_col.pull(demo=not live)
-    classified = classify_dataframe(df, text_col="text", limit=limit, live=live)
-    share = aggregate_stance(classified)
+    stance_csv = PROCESSED_DIR / "reddit_posts_stance.csv"
 
-    mode_note = "source: live haiku classification" if live else (
-        "source: synthetic truth labels (demo mode)" if "true_stance" in df.columns else "source: rule-based fallback (no API, no ground truth)"
-    )
+    # if we already have real haiku-classified data and we're not running live, read it rather than
+    # regenerating from synthetic truth (would clobber the real classifications).
+    use_existing = (df is None) and (not live) and _existing_stance_is_haiku(stance_csv)
+
+    if use_existing:
+        classified = pd.read_csv(stance_csv)
+        mode_note = f"source: live haiku classification ({classified['stance'].notna().sum():,} posts)"
+    else:
+        if df is None:
+            df = reddit_col.pull(demo=not live)
+        classified = classify_dataframe(df, text_col="text", limit=limit, live=live)
+        mode_note = "source: live haiku classification" if live else (
+            "source: synthetic truth labels (demo mode)" if "true_stance" in df.columns else "source: rule-based fallback (no API, no ground truth)"
+        )
+        PROCESSED_DIR.mkdir(parents=True, exist_ok=True)
+        classified.to_csv(stance_csv, index=False)
+
+    share = aggregate_stance(classified)
     fig, ax = plt.subplots(1, 1, figsize=(14, 4))
     plot_stance(share, ax, "panel 2 — stance share on reddit (pro-enforcement vs pro-labor vs neutral)", note=mode_note)
     ax.set_xlabel("year")
     fig.tight_layout()
     fig.savefig(output, dpi=130, bbox_inches="tight")
     plt.close(fig)
-
-    # also persist the labeled df for panel 3 + validation
-    PROCESSED_DIR.mkdir(parents=True, exist_ok=True)
-    classified.to_csv(PROCESSED_DIR / "reddit_posts_stance.csv", index=False)
-
     return output
 
 

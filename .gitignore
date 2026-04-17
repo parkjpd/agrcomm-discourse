@@ -36,3 +36,6 @@ output/*
 # generated validation sheets (regenerate with validation.make_hand_label_template)
 validation/stance_labels.csv
 validation/stance_labels_hidden.csv
+
+# claude code runtime state
+.claude/
