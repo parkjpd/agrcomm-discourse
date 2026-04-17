@@ -130,6 +130,90 @@ session 2 (4h):
 
 if session 2 blows past 4h: ship panels 1+2, drop panel 3. still a strong finding.
 
+## methodology
+
+### keyword bucketing (panel 1)
+
+every keyword term is pre-assigned to one of three buckets in `config/keywords.yaml`:
+
+- **right_loaded / enforcement-framed:** `illegal alien`, `illegal immigrant`, `illegals`, `criminal alien`, `border crisis`, `mass deportation`, `invasion`
+- **left_loaded / labor-framed:** `undocumented worker`, `undocumented immigrant`, `undocumented`, `immigrant worker`, `immigrant labor`, `essential worker`, `farmworker`, `farm worker`
+- **neutral:** `migrant worker`, `migrant labor`, `agricultural worker`, `seasonal worker`, `H-2A`, `guest worker`
+
+every term is required to co-occur with a topic anchor (`farmworker`, `farm worker`, `H-2A`, `agricultural worker`, `migrant worker`, `migrant labor`, `seasonal worker`) to count as "about migrant farm labor" rather than generic immigration coverage.
+
+bucket design is deliberately **symmetric** per the project's bias-management rule (spec §10): each loaded right term has a loaded left counterpart. the neutral bucket exists so we can tell when coverage is just reporting vs actively framed.
+
+### stance classification (panel 2)
+
+three-way classification via claude haiku 4.5 against the rubric in `config/stance_rubric.yaml`:
+
+- `pro_enforcement` — supports stricter enforcement / deportation / frames migrant labor as a problem
+- `pro_immigrant_labor` — defends migrant workers / calls for legalization / frames enforcement as harmful
+- `neutral_mixed` — reports without taking a side / mixed feelings / off-topic / spam
+
+the rubric prompt is sent via anthropic prompt caching so repeated classifications share the same system prompt at a ~90% discount.
+
+each post is classified independently; no context from other posts is used. the classifier is deliberately conservative — when indicators for both sides appear, or when stance is ambiguous, it returns `neutral_mixed` rather than guessing.
+
+### topic modeling (panel 3)
+
+BERTopic with `sentence-transformers/all-MiniLM-L6-v2` embeddings on the combined news + reddit corpus. clusters are hand-labeled after fitting, then mapped to eight canonical buckets:
+
+- ICE / workplace enforcement
+- border / migration flow
+- deportation operations
+- criminal framing
+- economic contribution
+- crop loss / labor shortage
+- essential worker framing
+- humanitarian / families
+
+prevalence is reported as share-of-year: for each year, what fraction of the collected text belongs to each topic cluster.
+
+### event overlay
+
+all four panels share a single event timeline (`config/events.yaml`). hinge points:
+
+- nov 2016 — trump elected (election)
+- jan 2017 — travel ban / ICE enforcement expansion (enforcement)
+- jun 2018 — family separation policy peak (enforcement)
+- mar 2020 — COVID / farmworkers designated essential (pandemic)
+- jan 2021 — biden inaugurated (election)
+- may 2023 — title 42 ends (legal)
+- nov 2024 — trump re-elected (election)
+- jan 2025 — mass deportation ops begin (enforcement)
+
+## validation
+
+### panel 2 kappa protocol
+
+per spec §6, panel 2 classifier must be validated before results are published:
+
+1. `python -m validation.make_hand_label_template` → writes `validation/stance_labels.csv` with 200 stratified posts
+2. team (david / ella / sydney) hand-labels 67ish posts each blind — no source or year visible
+3. where any two disagree, discuss and resolve to a consensus human label
+4. `python -m validation.validate_stance` computes cohen's kappa between consensus labels and haiku labels
+
+thresholds:
+- **kappa ≥ 0.6 → ship** the classifier as-is
+- **kappa ∈ [0.4, 0.6) → rewrite** the rubric and re-run
+- **kappa < 0.4 → stop and report honestly** that stance is not reliably detectable with this method
+
+### bias management guardrails
+
+- **symmetric keyword buckets** — every loaded right-coded term has a left-coded counterpart (spec §10)
+- **symmetric rubric indicators** — same count of pro-enforcement and pro-immigrant-labor indicators
+- **blind labeling** — hand-labelers see post text only, not source/year/subreddit
+
+## limitations
+
+- **reddit coverage gap:** pushshift public API was discontinued in 2023; historical 2010-2023 reddit access is via academic torrent dumps or arctic-shift. live data (2023+) is via PRAW with rate limits.
+- **media cloud is metadata-only:** their v4 api returns article titles + URLs but not body text. panel 3 topic modeling on news uses titles only. body-text scraping from source URLs is possible but slow and rate-limited.
+- **haiku rate limits:** free-tier anthropic accounts are limited to 50 requests/minute. classifying the full 50k reddit corpus takes ~17 minutes uninterrupted at this rate. spend estimate: ~$3-5 with prompt caching.
+- **GDELT is currently disabled** due to aggressive rate limiting on the free DOC 2.0 API; media cloud covers the full 2010-2026 range reliably.
+- **panel 4 (futures) is experimental:** correlation between quarterly news framing and quarterly commodity returns is weak (65 observations, low variance). see `docs/future_work.md` for a richer analysis plan.
+
 ## team
 
 david, ella, sydney. AGRCOMM 2330.
