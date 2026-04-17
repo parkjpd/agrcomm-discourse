@@ -261,6 +261,50 @@ with tab_over:
         "- if all three break at the same events → regime-driven discourse. if only some break → mixed pattern."
     )
 
+    # event-impact summary — one row per event, delta across each panel + futures
+    st.markdown("##### event-impact summary")
+    st.caption("how much did each panel move in the 2 quarters after each event vs the 2 quarters before? the last column is FCOJ's 30-day post-vs-pre return as a market sanity check.")
+
+    try:
+        events_list = load_events()
+        from panels.panel4_futures import event_window_returns
+        ew = event_window_returns(window_days=30)
+
+        def _panel_delta(series, ev_date_ts, n_quarters=2):
+            if series.empty: return None
+            pre = series.loc[ev_date_ts - pd.Timedelta(days=n_quarters * 90):ev_date_ts]
+            post = series.loc[ev_date_ts:ev_date_ts + pd.Timedelta(days=n_quarters * 90)]
+            if len(pre) == 0 or len(post) == 0: return None
+            return float(post.mean() - pre.mean())
+
+        news_shr = _news_share()
+        stance_shr, _ = _stance_share()
+
+        rows = []
+        for ev in events_list:
+            ev_ts = pd.to_datetime(str(ev["date"])[:10])
+            lang_delta = _panel_delta(news_shr.get("right_loaded", pd.Series(dtype=float)), ev_ts)
+            stance_delta = _panel_delta(stance_shr.get("pro_enforcement", pd.Series(dtype=float)), ev_ts)
+            fcoj_row = ew[(ew["event"] == ev["shown"]) & (ew["ticker"] == "FCOJ")]
+            fcoj_ret = float(fcoj_row["post_minus_pre"].iloc[0]) if not fcoj_row.empty else None
+
+            rows.append({
+                "event": ev["shown"],
+                "date": str(ev["date"])[:10],
+                "category": ev.get("category", ""),
+                "Δ news enforcement-framed": f"{lang_delta * 100:+.1f} pp" if lang_delta is not None else "—",
+                "Δ reddit pro-enforcement": f"{stance_delta * 100:+.1f} pp" if stance_delta is not None else "—",
+                "FCOJ 30d post-pre": f"{fcoj_ret * 100:+.1f} %" if fcoj_ret is not None else "—",
+            })
+        summary_df = pd.DataFrame(rows)
+        st.dataframe(summary_df, width="stretch", hide_index=True)
+        st.caption(
+            "pp = percentage points. positive Δ = enforcement framing/stance rose after the event. "
+            "events where language/stance both move up are candidates for 'regime-driven' classification."
+        )
+    except Exception as e:
+        st.info(f"event-impact summary unavailable: {e}")
+
 
 # ===== panel 1 language =====
 
