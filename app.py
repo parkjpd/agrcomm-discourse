@@ -137,6 +137,48 @@ with tab_over:
     fig = pc.three_panel(news_s, stance_s, topic_s)
     st.plotly_chart(fig, width="stretch")
 
+    # --- findings at a glance ---
+    st.markdown("##### findings at a glance")
+    fc1, fc2, fc3 = st.columns(3)
+
+    def _delta(series, start: str, end: str) -> float | None:
+        if series.empty: return None
+        sub = series.loc[start:end]
+        return float(sub.mean()) if len(sub) else None
+
+    with fc1:
+        if not news.empty and "right_loaded" in news.columns:
+            pre = _delta(news["right_loaded"], "2010-01-01", "2016-10-31")
+            trump1 = _delta(news["right_loaded"], "2016-11-01", "2020-02-29")
+            st.metric(
+                "news — enforcement framing (trump 1 vs pre)",
+                f"{(trump1 or 0):.1%}",
+                f"{((trump1 or 0) - (pre or 0)) * 100:+.1f} pp",
+                help="mean share of enforcement-framed terms during trump 1 era minus pre-trump era",
+            )
+
+    with fc2:
+        if not reddit_stance.empty and "pro_enforcement" in reddit_stance.columns:
+            covid = _delta(reddit_stance["pro_enforcement"], "2020-03-01", "2021-01-19")
+            trump1_s = _delta(reddit_stance["pro_enforcement"], "2016-11-01", "2020-02-29")
+            st.metric(
+                "reddit — pro-enforcement share (covid vs trump 1)",
+                f"{(covid or 0):.1%}",
+                f"{((covid or 0) - (trump1_s or 0)) * 100:+.1f} pp",
+                help="mean pro-enforcement share during covid era minus trump 1 era",
+            )
+
+    with fc3:
+        if not topic.empty and "essential" in topic.index:
+            essential_covid = float(topic.loc["essential", [c for c in topic.columns if 2020 <= int(c) <= 2020]].mean()) if any(2020 <= int(c) <= 2020 for c in topic.columns) else 0
+            essential_pre = float(topic.loc["essential", [c for c in topic.columns if 2015 <= int(c) <= 2019]].mean()) if any(2015 <= int(c) <= 2019 for c in topic.columns) else 0
+            st.metric(
+                "topic — essential worker framing (2020 vs 2015-19)",
+                f"{essential_covid:.1%}",
+                f"{(essential_covid - essential_pre) * 100:+.1f} pp",
+                help="essential-worker topic prevalence in 2020 minus pre-covid average",
+            )
+
     st.markdown("##### reading the figure")
     st.markdown(
         "- **all three panels share the same x-axis** — event markers align vertically across panels\n"
