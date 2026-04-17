@@ -457,6 +457,44 @@ with tab_topic:
             fig.update_layout(yaxis_tickformat=".0%", xaxis_title="year", yaxis_title="share of year", height=400)
             st.plotly_chart(fig, width="stretch")
 
+        # topic x stance crosstab - panel interaction
+        st.markdown("##### topic × stance interaction")
+        st.caption("joins topic labels and haiku stance labels on the same posts. shows which topics tend to attract which stance.")
+        try:
+            stance_df = pd.read_csv(PROCESSED_DIR / "reddit_posts_stance.csv")
+            # join by text (stance_df has text from the reddit corpus)
+            corpus_subset = corpus[["text", "true_topic"]].drop_duplicates("text") if "true_topic" in corpus.columns else pd.DataFrame()
+            if not corpus_subset.empty and "stance" in stance_df.columns:
+                merged = stance_df.merge(corpus_subset, on="text", how="inner")
+                if not merged.empty and merged["stance"].notna().any():
+                    ct = pd.crosstab(merged["true_topic"], merged["stance"], normalize="index")
+                    ct = ct[[c for c in STANCE_LABELS if c in ct.columns]]
+                    # sort rows by canonical topic order
+                    from panels.panel3_topic import CANONICAL_TOPICS
+                    ct = ct.reindex([t for t in CANONICAL_TOPICS if t in ct.index])
+
+                    import plotly.graph_objects as go
+                    fig_ct = go.Figure(go.Heatmap(
+                        z=ct.values,
+                        x=[c.replace("_", " ") for c in ct.columns],
+                        y=[pc.TOPIC_DISPLAY.get(t, t) for t in ct.index],
+                        colorscale="RdBu_r",
+                        zmid=1.0/len(ct.columns),  # center at uniform distribution
+                        colorbar=dict(title="share within topic", tickformat=".0%"),
+                        hovertemplate="%{y} — %{x}: %{z:.1%}<extra></extra>",
+                    ))
+                    fig_ct.update_layout(
+                        title=f"stance distribution within each topic (n={len(merged):,} posts)",
+                        height=420,
+                        margin=dict(t=60, b=40, l=240, r=20),
+                    )
+                    fig_ct.update_yaxes(autorange="reversed")
+                    st.plotly_chart(fig_ct, width="stretch")
+                else:
+                    st.info("no overlap between classified posts and topic-labeled corpus yet.")
+        except Exception as e:
+            st.info(f"crosstab skipped: {e}")
+
 
 # ===== panel 4 futures (bonus) =====
 
