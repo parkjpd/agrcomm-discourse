@@ -78,7 +78,7 @@ async def _classify_one(client, prompt_template: str, post: str, model: str, sem
         ]
         user_text = f"Post:\n\"\"\"\n{post}\n\"\"\"\n\nRespond with ONLY the label string. No explanation."
 
-        for attempt in range(3):
+        for attempt in range(5):
             try:
                 resp = await client.messages.create(
                     model=model,
@@ -91,10 +91,15 @@ async def _classify_one(client, prompt_template: str, post: str, model: str, sem
                 cache_put(NAMESPACE, req, label, summary=text[:50])
                 return label
             except Exception as e:
-                if attempt == 2:
-                    print(f"  stance call failed: {type(e).__name__}: {e}", file=sys.stderr)
+                name = type(e).__name__
+                if attempt == 4:
+                    print(f"  stance call failed ({name}): {str(e)[:140]}", file=sys.stderr)
                     return None
-                await asyncio.sleep(1.5 * (attempt + 1))
+                # rate-limit backoff: honor 60s window since rate limit is per-minute
+                if "rate_limit" in str(e).lower() or name == "RateLimitError":
+                    await asyncio.sleep(8 * (attempt + 1))
+                else:
+                    await asyncio.sleep(1.5 * (attempt + 1))
     return None
 
 

@@ -37,7 +37,9 @@ reddit:
 
 panel2:
   model: "claude-haiku-4-5-20251001"
-  max_concurrency: 8
+  # 3 matches our 50 req/min rate limit with room for queued retries. bump higher only if on
+  # a higher-tier plan.
+  max_concurrency: 3
   expected_input_tokens_per_call: 500
   expected_output_tokens_per_call: 5
   # kappa thresholds per spec section 6
