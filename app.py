@@ -117,8 +117,8 @@ st.caption("AGRCOMM 2330 case study — language / stance / topic panels with po
 
 # ---------- tabs ----------
 
-tab_over, tab_lang, tab_stance, tab_topic, tab_data, tab_about = st.tabs(
-    ["overview", "panel 1 — language", "panel 2 — stance", "panel 3 — topic", "data", "about"]
+tab_over, tab_lang, tab_stance, tab_topic, tab_futures, tab_data, tab_about = st.tabs(
+    ["overview", "panel 1 — language", "panel 2 — stance", "panel 3 — topic", "panel 4 — futures (bonus)", "data", "about"]
 )
 
 
@@ -254,6 +254,92 @@ with tab_topic:
                 fig.add_trace(go.Scatter(x=share_s.columns.astype(int), y=share_s.loc[t], mode="lines+markers", name=pc.TOPIC_DISPLAY.get(t, t)))
             fig.update_layout(yaxis_tickformat=".0%", xaxis_title="year", yaxis_title="share of year", height=400)
             st.plotly_chart(fig, width="stretch")
+
+
+# ===== panel 4 futures (bonus) =====
+
+with tab_futures:
+    st.markdown("##### bonus — discourse vs agricultural futures")
+    st.caption(
+        "experimental. overlays ag commodity futures on the enforcement-framed news-share series. "
+        "hypothesis: labor-heavy crops (FCOJ, class III milk, sugar) should move with enforcement discourse more than low-labor corn. "
+        "see docs/future_work.md for the full research plan."
+    )
+
+    try:
+        from panels.panel4_futures import (
+            LABOR_HEAVY, BASELINE, TICKER_COLORS, TICKER_DISPLAY, TICKERS_ALL,
+            _enforcement_share_quarterly, load_futures_quarterly, correlation_table,
+        )
+        import plotly.graph_objects as go
+        from datetime import datetime as _dt
+
+        fut = load_futures_quarterly()
+        enf = _enforcement_share_quarterly()
+
+        if fut.empty or enf.empty:
+            st.info("no futures data yet — run `python -m collectors.futures` to pull yfinance prices.")
+        else:
+            picked = st.multiselect(
+                "commodities",
+                options=TICKERS_ALL(),
+                default=LABOR_HEAVY + BASELINE,
+                format_func=lambda t: TICKER_DISPLAY.get(t, t),
+            )
+
+            # filter to year range
+            enf_f = enf.loc[(enf.index.year >= year_range[0]) & (enf.index.year <= year_range[1])]
+            fig = go.Figure()
+            # enforcement share as filled area (left y)
+            fig.add_trace(
+                go.Scatter(
+                    x=enf_f.index, y=enf_f.values,
+                    mode="lines", fill="tozeroy", name="enforcement-framed share (news)",
+                    line=dict(color="#c23b22", width=1),
+                    fillcolor="rgba(194,59,34,0.35)",
+                    yaxis="y1",
+                )
+            )
+            # futures normalized to 100 at first value within the selected window
+            for t in picked:
+                sub = fut[fut["ticker"] == t].set_index("date")["close"]
+                sub = sub.loc[(sub.index.year >= year_range[0]) & (sub.index.year <= year_range[1])]
+                if sub.empty:
+                    continue
+                norm = sub / sub.iloc[0] * 100
+                fig.add_trace(
+                    go.Scatter(
+                        x=norm.index, y=norm.values,
+                        mode="lines",
+                        name=TICKER_DISPLAY.get(t, t),
+                        line=dict(color=TICKER_COLORS.get(t, "#888"), width=2),
+                        yaxis="y2",
+                    )
+                )
+
+            shapes, annotations = pc._event_shapes(y_min=0, y_max=1)
+            fig.update_layout(
+                title="enforcement-framed share vs ag futures (normalized)",
+                xaxis_title="year",
+                yaxis=dict(title="enforcement share", tickformat=".0%", range=[0, 0.25], side="left"),
+                yaxis2=dict(title="ag futures (indexed to 100)", overlaying="y", side="right"),
+                hovermode="x unified",
+                shapes=shapes,
+                annotations=annotations,
+                height=500,
+                legend=dict(orientation="h", yanchor="bottom", y=-0.25),
+                margin=dict(t=80, b=40, l=60, r=60),
+            )
+            st.plotly_chart(fig, width="stretch")
+
+            st.markdown("##### correlation (news enforcement share vs quarterly returns)")
+            st.dataframe(correlation_table(), width="stretch", hide_index=True)
+            st.caption(
+                "with only ~65 quarterly observations and a relatively stable news framing series, "
+                "current correlations are weak. reddit stance share (more variable) is the better candidate for future work."
+            )
+    except Exception as e:
+        st.error(f"panel 4 error: {e}")
 
 
 # ===== data =====

@@ -93,6 +93,16 @@ def _panel3(live: bool, limit: int | None):
     print(f"  wrote {p}")
 
 
+def _panel4():
+    from panels import panel4_futures
+    print("panel 4 (bonus) ----------------------------------------")
+    try:
+        p = panel4_futures.render()
+        print(f"  wrote {p}")
+    except Exception as e:
+        print(f"  panel 4 skipped: {e}")
+
+
 def _combined(live_stance: bool, live_topic: bool, limit: int | None):
     from viz import three_panel
     print("combined -----------------------------------------------")
@@ -148,7 +158,7 @@ def main(argv: list[str] | None = None) -> int:
     ensure_dirs()
     ap = argparse.ArgumentParser(description="discourse-shift pipeline")
     ap.add_argument("--collect", action="store_true", help="run live collectors before panels")
-    ap.add_argument("--only", choices=["panel1", "panel2", "panel3", "combined"], default=None)
+    ap.add_argument("--only", choices=["panel1", "panel2", "panel3", "panel4", "combined"], default=None)
     ap.add_argument("--live", action="store_true", help="enable live stance + topic (implies --collect)")
     ap.add_argument("--live-stance", action="store_true")
     ap.add_argument("--live-topic", action="store_true")
@@ -172,6 +182,8 @@ def main(argv: list[str] | None = None) -> int:
         _panel2(live=args.live_stance, limit=args.limit)
     if args.only in (None, "panel3"):
         _panel3(live=args.live_topic, limit=args.limit)
+    if args.only in (None, "panel4"):
+        _panel4()
     if args.only in (None, "combined"):
         _combined(live_stance=args.live_stance, live_topic=args.live_topic, limit=args.limit)
 
