@@ -22,6 +22,13 @@ NAMESPACE = "gdelt"
 GDELT_START = date(2017, 2, 1)
 
 
+def _anchored_query(term: str) -> str:
+    """bucket term AND any anchor term. keeps counts scoped to migrant farm labor discourse."""
+    anchor = load_keywords()["topic_anchor"]["require_any"]
+    anchor_clause = " OR ".join(f'"{a}"' for a in anchor)
+    return f'"{term}" AND ({anchor_clause})'
+
+
 def _quarter_bounds(d: date) -> tuple[date, date]:
     q = (d.month - 1) // 3
     start = date(d.year, q * 3 + 1, 1)
@@ -40,10 +47,10 @@ def _iter_quarters(start: date, end: date):
         qs = qend + timedelta(days=1)
 
 
-def _filter(keyword: str, qstart: date, qend: date):
+def _filter(query: str, qstart: date, qend: date):
     from gdeltdoc import Filters
     return Filters(
-        keyword=keyword,
+        keyword=query,
         start_date=qstart.isoformat(),
         end_date=qend.isoformat(),
         country="US",
@@ -73,8 +80,9 @@ def pull_volumes(start: date = GDELT_START, end: date | None = None) -> pd.DataF
 
     for bucket_name, bucket in buckets.items():
         for term in bucket["terms"]:
+            query = _anchored_query(term)
             for qstart, qend in _iter_quarters(start, end):
-                req = {"term": term, "start": qstart.isoformat(), "end": qend.isoformat()}
+                req = {"q": query, "start": qstart.isoformat(), "end": qend.isoformat()}
                 cached = cache_get(NAMESPACE, req)
                 if cached is not None:
                     rows.append({"date": qstart.isoformat(), "term": term, "bucket": bucket_name, "count": cached, "source": "gdelt"})
@@ -83,7 +91,7 @@ def pull_volumes(start: date = GDELT_START, end: date | None = None) -> pd.DataF
                 count = None
                 for attempt in range(3):
                     try:
-                        f = _filter(term, qstart, qend)
+                        f = _filter(query, qstart, qend)
                         articles = gd.article_search(f)
                         count = len(articles) if articles is not None else 0
                         break
