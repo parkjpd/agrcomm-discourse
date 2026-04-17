@@ -293,3 +293,393 @@ def three_panel(news_share: pd.DataFrame, stance_share: pd.DataFrame, topic_shar
         margin=dict(t=80, b=40, l=180, r=30),
     )
     return fig
+
+
+# ============================================================
+# deeper-look charts
+# ============================================================
+
+
+def _resample_to_year(share: pd.DataFrame) -> pd.DataFrame:
+    """convert quarter-indexed share df to year-indexed by simple mean."""
+    if share.empty:
+        return share
+    out = share.copy()
+    out.index = pd.to_datetime(out.index)
+    return out.groupby(out.index.year).mean()
+
+
+def language_year_lines(share: pd.DataFrame, title: str) -> go.Figure:
+    """panel 1 at year granularity — line per bucket, not stacked.
+    makes the enforcement-framing trend (3% -> 9%) actually visible."""
+    fig = go.Figure()
+    if share.empty:
+        fig.add_annotation(text="no data", x=0.5, y=0.5, xref="paper", yref="paper", showarrow=False)
+        fig.update_layout(title=title)
+        return fig
+
+    yearly = _resample_to_year(share)
+    kw = load_keywords()["buckets"]
+    for bucket in ("right_loaded", "left_loaded", "neutral"):
+        if bucket not in yearly.columns:
+            continue
+        fig.add_trace(
+            go.Scatter(
+                x=yearly.index, y=yearly[bucket],
+                mode="lines+markers",
+                name=kw[bucket]["display"],
+                line=dict(color=LANG_COLORS[bucket], width=2.5),
+                marker=dict(size=7),
+                hovertemplate="%{x} — " + kw[bucket]["display"] + ": %{y:.1%}<extra></extra>",
+            )
+        )
+
+    # event shapes at year scale
+    shapes = []
+    for ev in load_events():
+        d = datetime.strptime(str(ev["date"])[:10], "%Y-%m-%d")
+        cat = ev.get("category", "policy")
+        shapes.append(dict(
+            type="line", x0=d, x1=d, y0=0, y1=1, yref="paper",
+            line=dict(color=CATEGORY_COLORS.get(cat, "#555"), width=1,
+                      dash=CATEGORY_DASH.get(cat, "dash")),
+            opacity=0.4,
+        ))
+
+    fig.update_layout(
+        title=title,
+        xaxis_title="year",
+        yaxis_title="share of that year's farm-labor coverage",
+        yaxis=dict(tickformat=".0%"),
+        hovermode="x unified",
+        shapes=shapes,
+        height=420,
+        margin=dict(t=60, b=40, l=60, r=20),
+        legend=dict(orientation="h", yanchor="bottom", y=-0.2, xanchor="left", x=0),
+    )
+    return fig
+
+
+def framing_year_heatmap(share: pd.DataFrame, title: str) -> go.Figure:
+    """news language as a heatmap: row per framing, column per year.
+    viridis with framing on y so you can scan across years."""
+    fig = go.Figure()
+    if share.empty:
+        fig.add_annotation(text="no data", x=0.5, y=0.5, xref="paper", yref="paper", showarrow=False)
+        fig.update_layout(title=title)
+        return fig
+
+    kw = load_keywords()["buckets"]
+    yearly = _resample_to_year(share)
+    rows = [b for b in ("right_loaded", "left_loaded", "neutral") if b in yearly.columns]
+    labels = [kw[b]["display"] for b in rows]
+    z = yearly[rows].T.values
+    x_labels = yearly.index.astype(int).tolist()
+
+    fig.add_trace(go.Heatmap(
+        z=z, x=x_labels, y=labels,
+        colorscale="YlOrRd",
+        colorbar=dict(title="share", tickformat=".0%"),
+        hovertemplate="%{y} — %{x}: %{z:.1%}<extra></extra>",
+        zmin=0,
+    ))
+    fig.update_layout(
+        title=title,
+        xaxis_title="year",
+        height=260,
+        margin=dict(t=60, b=40, l=180, r=20),
+    )
+    fig.update_yaxes(autorange="reversed")
+    return fig
+
+
+def stance_year_heatmap(share: pd.DataFrame, title: str) -> go.Figure:
+    """reddit stance as a heatmap: row per stance, column per year."""
+    fig = go.Figure()
+    if share.empty:
+        fig.add_annotation(text="no data", x=0.5, y=0.5, xref="paper", yref="paper", showarrow=False)
+        fig.update_layout(title=title)
+        return fig
+
+    yearly = _resample_to_year(share)
+    display = {
+        "pro_enforcement": "pro-enforcement",
+        "pro_immigrant_labor": "pro-immigrant-labor",
+        "neutral_mixed": "neutral / mixed",
+    }
+    rows = [s for s in ("pro_enforcement", "pro_immigrant_labor", "neutral_mixed") if s in yearly.columns]
+    labels = [display[r] for r in rows]
+    z = yearly[rows].T.values
+    x_labels = yearly.index.astype(int).tolist()
+
+    fig.add_trace(go.Heatmap(
+        z=z, x=x_labels, y=labels,
+        colorscale="RdBu_r",
+        zmid=0.33,
+        colorbar=dict(title="share", tickformat=".0%"),
+        hovertemplate="%{y} — %{x}: %{z:.1%}<extra></extra>",
+    ))
+    fig.update_layout(
+        title=title,
+        xaxis_title="year",
+        height=260,
+        margin=dict(t=60, b=40, l=180, r=20),
+    )
+    fig.update_yaxes(autorange="reversed")
+    return fig
+
+
+def volume_over_time(news_monthly: pd.Series, reddit_monthly: pd.Series, title: str) -> go.Figure:
+    """discourse volume: how MUCH people are talking, month by month.
+    two traces (news articles, reddit posts) on a shared axis. peaks near events = evidence of engagement.
+    both inputs are pd.Series indexed by pd.Period('M') or pd.Timestamp."""
+    fig = go.Figure()
+
+    def _to_timestamp_index(s: pd.Series) -> pd.Series:
+        if s is None or len(s) == 0:
+            return pd.Series(dtype=float)
+        if isinstance(s.index, pd.PeriodIndex):
+            s = s.copy()
+            s.index = s.index.to_timestamp()
+        return s.sort_index()
+
+    news_m = _to_timestamp_index(news_monthly)
+    reddit_m = _to_timestamp_index(reddit_monthly)
+
+    if news_m.empty and reddit_m.empty:
+        fig.add_annotation(text="no volume data", x=0.5, y=0.5, xref="paper", yref="paper", showarrow=False)
+        fig.update_layout(title=title)
+        return fig
+
+    if not news_m.empty:
+        fig.add_trace(go.Scatter(
+            x=news_m.index, y=news_m.values,
+            mode="lines", name="news articles / month",
+            line=dict(color="#2e75b6", width=2),
+            fill="tozeroy", fillcolor="rgba(46,117,182,0.15)",
+            hovertemplate="%{x|%Y-%m} — %{y:,.0f} articles<extra></extra>",
+        ))
+    if not reddit_m.empty:
+        fig.add_trace(go.Scatter(
+            x=reddit_m.index, y=reddit_m.values,
+            mode="lines", name="reddit posts / month",
+            line=dict(color="#c23b22", width=2),
+            yaxis="y2",
+            hovertemplate="%{x|%Y-%m} — %{y:,.0f} posts<extra></extra>",
+        ))
+
+    shapes, annotations = _event_shapes(y_min=0, y_max=1, yref="paper")
+    fig.update_layout(
+        title=title,
+        xaxis_title="month",
+        yaxis=dict(title="news articles per month", side="left"),
+        yaxis2=dict(title="reddit posts per month", side="right", overlaying="y"),
+        hovermode="x unified",
+        shapes=shapes, annotations=annotations,
+        height=420,
+        margin=dict(t=90, b=40, l=60, r=60),
+        legend=dict(orientation="h", yanchor="bottom", y=-0.2, xanchor="left", x=0),
+    )
+    return fig
+
+
+def event_discourse_waterfall(news_share: pd.DataFrame, window_days: int = 90, title: str = "") -> go.Figure:
+    """for each event, compute change in enforcement-framing share: mean(post window) - mean(pre window).
+    horizontal bar chart, sorted by magnitude. red = enforcement framing rose after event."""
+    fig = go.Figure()
+    if news_share.empty or "right_loaded" in news_share.columns is False:
+        fig.add_annotation(text="no data", x=0.5, y=0.5, xref="paper", yref="paper", showarrow=False)
+        fig.update_layout(title=title)
+        return fig
+
+    idx = pd.to_datetime(news_share.index)
+    enf = news_share["right_loaded"] if "right_loaded" in news_share.columns else None
+    if enf is None:
+        fig.add_annotation(text="no enforcement column", x=0.5, y=0.5, xref="paper", yref="paper", showarrow=False)
+        fig.update_layout(title=title)
+        return fig
+    enf = enf.copy()
+    enf.index = idx
+
+    rows = []
+    for ev in load_events():
+        d = datetime.strptime(str(ev["date"])[:10], "%Y-%m-%d")
+        pre_mask = (enf.index >= d - pd.Timedelta(days=window_days)) & (enf.index < d)
+        post_mask = (enf.index >= d) & (enf.index <= d + pd.Timedelta(days=window_days))
+        pre = enf[pre_mask].mean() if pre_mask.any() else float("nan")
+        post = enf[post_mask].mean() if post_mask.any() else float("nan")
+        if pd.isna(pre) or pd.isna(post):
+            continue
+        rows.append({"event": ev["shown"], "date": d, "delta": post - pre, "category": ev.get("category", "policy")})
+
+    if not rows:
+        fig.add_annotation(text="no pre/post windows computable", x=0.5, y=0.5, xref="paper", yref="paper", showarrow=False)
+        fig.update_layout(title=title)
+        return fig
+
+    df = pd.DataFrame(rows).sort_values("delta")
+    colors = ["#c23b22" if d > 0 else "#2e75b6" for d in df["delta"]]
+    labels = [f"{e}  ({d.strftime('%Y-%m')})" for e, d in zip(df["event"], df["date"])]
+
+    fig.add_trace(go.Bar(
+        x=df["delta"] * 100, y=labels,
+        orientation="h",
+        marker_color=colors,
+        text=[f"{v*100:+.1f} pp" for v in df["delta"]],
+        textposition="outside",
+        hovertemplate="%{y}<br>change: %{x:+.2f} pp<extra></extra>",
+    ))
+    fig.add_vline(x=0, line_color="#333", line_width=1)
+    fig.update_layout(
+        title=title,
+        xaxis_title=f"change in enforcement-framing share  ({window_days}d after − {window_days}d before, percentage points)",
+        height=max(320, 28 * len(df) + 100),
+        margin=dict(t=60, b=60, l=280, r=60),
+        showlegend=False,
+    )
+    return fig
+
+
+def stance_topic_sankey(reddit_raw: pd.DataFrame, title: str) -> go.Figure:
+    """flow diagram: stance (left) -> topic (right). width = # posts.
+    makes 'which topics drive which stance' legible in one glance."""
+    fig = go.Figure()
+    if reddit_raw is None or reddit_raw.empty:
+        fig.add_annotation(text="no data", x=0.5, y=0.5, xref="paper", yref="paper", showarrow=False)
+        fig.update_layout(title=title)
+        return fig
+
+    df = reddit_raw.copy()
+    if "stance" not in df.columns:
+        fig.add_annotation(text="no stance column", x=0.5, y=0.5, xref="paper", yref="paper", showarrow=False)
+        fig.update_layout(title=title)
+        return fig
+
+    topic_col = "true_topic" if "true_topic" in df.columns and df["true_topic"].notna().any() else None
+    if topic_col is None:
+        fig.add_annotation(text="no topic column", x=0.5, y=0.5, xref="paper", yref="paper", showarrow=False)
+        fig.update_layout(title=title)
+        return fig
+
+    df = df.dropna(subset=["stance", topic_col])
+    crosstab = pd.crosstab(df["stance"], df[topic_col])
+    stances = list(crosstab.index)
+    topics = list(crosstab.columns)
+    stance_display = {"pro_enforcement": "pro-enforcement", "pro_immigrant_labor": "pro-immigrant-labor", "neutral_mixed": "neutral / mixed"}
+    topic_display = {
+        "enforcement": "ICE / enforcement", "border": "border", "deportation": "deportation",
+        "criminal": "criminal framing", "economic": "economic", "cropLoss": "crop loss",
+        "essential": "essential worker", "humanitarian": "humanitarian",
+    }
+
+    labels = [stance_display.get(s, s) for s in stances] + [topic_display.get(t, t) for t in topics]
+    stance_colors_map = [STANCE_COLORS.get(s, "#999") for s in stances]
+    topic_color = "#777"
+    node_colors = stance_colors_map + [topic_color] * len(topics)
+
+    sources, targets, values, link_colors = [], [], [], []
+    for i, s in enumerate(stances):
+        for j, t in enumerate(topics):
+            v = int(crosstab.loc[s, t])
+            if v == 0:
+                continue
+            sources.append(i)
+            targets.append(len(stances) + j)
+            values.append(v)
+            base = STANCE_COLORS.get(s, "#999")
+            link_colors.append(_rgba_from_hex(base, 0.35))
+
+    fig.add_trace(go.Sankey(
+        node=dict(pad=18, thickness=16, line=dict(color="#333", width=0.5),
+                  label=labels, color=node_colors),
+        link=dict(source=sources, target=targets, value=values, color=link_colors,
+                  hovertemplate="%{source.label} → %{target.label}: %{value:,} posts<extra></extra>"),
+    ))
+    fig.update_layout(title=title, height=480, margin=dict(t=60, b=20, l=20, r=20))
+    return fig
+
+
+def _rgba_from_hex(hex_color: str, alpha: float) -> str:
+    h = hex_color.lstrip("#")
+    r, g, b = int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16)
+    return f"rgba({r},{g},{b},{alpha})"
+
+
+def subreddit_small_multiples(reddit_raw: pd.DataFrame, title: str, top_n: int = 6) -> go.Figure:
+    """one mini stacked-bar per subreddit showing stance mix across eras.
+    helps see whether the trump-era jump is universal or driven by a few subs."""
+    if reddit_raw is None or reddit_raw.empty or "stance" not in reddit_raw.columns or "subreddit" not in reddit_raw.columns:
+        fig = go.Figure()
+        fig.add_annotation(text="no data", x=0.5, y=0.5, xref="paper", yref="paper", showarrow=False)
+        fig.update_layout(title=title)
+        return fig
+
+    df = reddit_raw.copy()
+    df = df.dropna(subset=["stance", "subreddit"])
+    df["date"] = pd.to_datetime(df["date"], errors="coerce")
+    df = df.dropna(subset=["date"])
+
+    eras = [
+        ("Obama 2", "2010-01-01", "2016-10-31"),
+        ("Trump 1", "2016-11-01", "2020-02-29"),
+        ("COVID",   "2020-03-01", "2021-01-19"),
+        ("Biden",   "2021-01-20", "2024-11-04"),
+        ("Trump 2", "2024-11-05", "2026-12-31"),
+    ]
+    era_starts = {n: pd.Timestamp(s) for n, s, _ in eras}
+    era_ends = {n: pd.Timestamp(e) for n, _, e in eras}
+
+    def era_of(d):
+        for name, s, e in eras:
+            if pd.Timestamp(s) <= d <= pd.Timestamp(e):
+                return name
+        return None
+    df["era"] = df["date"].map(era_of)
+    df = df.dropna(subset=["era"])
+
+    top_subs = df["subreddit"].value_counts().head(top_n).index.tolist()
+    if not top_subs:
+        fig = go.Figure()
+        fig.add_annotation(text="no subs", x=0.5, y=0.5, xref="paper", yref="paper", showarrow=False)
+        fig.update_layout(title=title)
+        return fig
+
+    rows = (len(top_subs) + 2) // 3
+    cols = 3
+    fig = make_subplots(
+        rows=rows, cols=cols,
+        subplot_titles=[f"r/{s}" for s in top_subs],
+        horizontal_spacing=0.08, vertical_spacing=0.18,
+    )
+
+    stance_order = ["pro_enforcement", "pro_immigrant_labor", "neutral_mixed"]
+    era_order = [n for n, _, _ in eras]
+    for i, sub in enumerate(top_subs):
+        r, c = i // cols + 1, i % cols + 1
+        sd = df[df["subreddit"] == sub]
+        ct = pd.crosstab(sd["era"], sd["stance"])
+        ct = ct.reindex(index=era_order, columns=stance_order, fill_value=0)
+        tot = ct.sum(axis=1).replace(0, 1)
+        share = ct.div(tot, axis=0)
+        for stance in stance_order:
+            fig.add_trace(
+                go.Bar(
+                    x=share.index, y=share[stance],
+                    name=stance.replace("_", " "),
+                    marker_color=STANCE_COLORS[stance],
+                    showlegend=(i == 0),
+                    legendgroup=stance,
+                    hovertemplate=f"r/{sub} — %{{x}}<br>{stance}: %{{y:.1%}}<extra></extra>",
+                ),
+                row=r, col=c,
+            )
+
+    fig.update_layout(
+        title=title,
+        barmode="stack",
+        height=280 * rows + 80,
+        margin=dict(t=80, b=60, l=60, r=20),
+        legend=dict(orientation="h", yanchor="bottom", y=-0.12, xanchor="left", x=0),
+    )
+    fig.update_yaxes(tickformat=".0%", range=[0, 1])
+    return fig

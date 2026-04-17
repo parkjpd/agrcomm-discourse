@@ -153,8 +153,8 @@ st.divider()
 
 # ---------- tabs ----------
 
-tab_story, tab_words, tab_opinions, tab_topics, tab_markets, tab_details = st.tabs(
-    ["📖 the story", "🗣️ words", "💭 opinions", "📚 topics", "📈 markets", "🔧 details"]
+tab_story, tab_words, tab_opinions, tab_topics, tab_markets, tab_deeper, tab_details = st.tabs(
+    ["📖 the story", "🗣️ words", "💭 opinions", "📚 topics", "📈 markets", "🔍 deeper look", "🔧 details"]
 )
 
 
@@ -629,7 +629,268 @@ with tab_markets:
 
 
 # ============================================================
-# TAB 6 — DETAILS
+# TAB 6 — DEEPER LOOK
+# ============================================================
+
+with tab_deeper:
+    st.markdown("## 🔍 seven more ways to see the data")
+    st.markdown(
+        "the main tabs tell the headline story. these seven charts let you **stress-test that story** from different angles. "
+        "each one answers a different question. read the intro + takeaway boxes first — the charts themselves are interactive, so hover, zoom, and pan to explore."
+    )
+
+    news = _news_share()
+    stance_share, stance_raw = _stance_share()
+    topic_share, topic_corpus = _topic_share()
+
+    news_s = _slice_year(news, *year_range) if not news.empty else news
+    stance_s = _slice_year(stance_share, *year_range) if not stance_share.empty else stance_share
+
+    # ------------------------------------------------------------
+    # 1. year-by-year line chart (news language)
+    # ------------------------------------------------------------
+    st.divider()
+    st.markdown("### 1. enforcement framing over time (year-by-year)")
+    st.markdown(
+        "the main story tab uses 5 big political eras. those bins can **smooth out year-level spikes**. "
+        "here's the same data but year by year — each point is one year's average."
+    )
+
+    with st.container(border=True):
+        st.markdown("**📖 how to read this chart**")
+        st.markdown(
+            "- one point per year. the height is that year's average share of farm-labor coverage for each framing.\n"
+            "- 🟥 red line = enforcement-framed language (\"illegal alien\", \"mass deportation\")\n"
+            "- 🟦 blue line = labor-framed (\"farmworker\", \"undocumented worker\")\n"
+            "- ⬜ grey line = neutral (\"migrant worker\", \"H-2A\")\n"
+            "- watch the red line around 2017 (Trump 1), 2020 (COVID), and 2025 (Trump 2)."
+        )
+
+    if not news_s.empty:
+        fig = pc.language_year_lines(news_s, "news enforcement framing by year")
+        st.plotly_chart(fig, width="stretch")
+
+    with st.container(border=True):
+        st.markdown("**💡 what this shows**")
+        st.markdown(
+            "the red line climbs from about **4% in 2010 to 9% in 2025** — more than doubling. "
+            "you can't see that in the 5-era averages because the jumps get lumped into multi-year bins. "
+            "**year granularity reveals a real upward trend**, not just era-level noise."
+        )
+
+    # ------------------------------------------------------------
+    # 2. framing × year heatmap
+    # ------------------------------------------------------------
+    st.divider()
+    st.markdown("### 2. framing × year — at a glance")
+    st.markdown(
+        "same data as chart #1, but as a **heatmap**. warmer colors = more of that year's coverage. "
+        "scan left-to-right along each row to see which years that framing peaked."
+    )
+
+    with st.container(border=True):
+        st.markdown("**📖 how to read this chart**")
+        st.markdown(
+            "- three rows: one per framing (red / labor / neutral).\n"
+            "- each column is one year.\n"
+            "- brighter colors = bigger share of that year's coverage. darker = smaller share.\n"
+            "- a whole row glowing brighter means that framing dominated across many years."
+        )
+
+    if not news_s.empty:
+        fig = pc.framing_year_heatmap(news_s, "news framing share per year")
+        st.plotly_chart(fig, width="stretch")
+
+    with st.container(border=True):
+        st.markdown("**💡 what this shows**")
+        st.markdown(
+            "the **labor-framed row is the brightest overall** — it's the dominant framing every single year. "
+            "the **enforcement row gets noticeably warmer on the right** (2024, 2025) — the Trump-2 uptick. "
+            "the **neutral row is steady** — descriptive terms like \"migrant worker\" are used consistently across the whole period."
+        )
+
+    # ------------------------------------------------------------
+    # 3. stance × year heatmap
+    # ------------------------------------------------------------
+    st.divider()
+    st.markdown("### 3. reddit stance × year — at a glance")
+    st.markdown("same heatmap idea, but for reddit user **opinions** (not news vocabulary).")
+
+    with st.container(border=True):
+        st.markdown("**📖 how to read this chart**")
+        st.markdown(
+            "- rows: pro-enforcement / pro-labor / neutral-mixed.\n"
+            "- columns: years.\n"
+            "- color is centered around 33% (an even 3-way split). red = above 33%, blue = below 33%.\n"
+            "- warm red cells in the pro-enforcement row mark trump-era spikes."
+        )
+
+    if not stance_s.empty:
+        fig = pc.stance_year_heatmap(stance_s, "reddit stance share per year")
+        st.plotly_chart(fig, width="stretch")
+
+    with st.container(border=True):
+        st.markdown("**💡 what this shows**")
+        st.markdown(
+            "the **pro-enforcement row lights up red during Trump 1 (2017–2019) and Trump 2 (2025–2026)** but goes blue/pale during Biden and COVID. "
+            "this matches the finding that reddit opinion **tracks the political regime much more closely than news vocabulary does**."
+        )
+
+    # ------------------------------------------------------------
+    # 4. discourse volume over time
+    # ------------------------------------------------------------
+    st.divider()
+    st.markdown("### 4. how much are people talking?")
+    st.markdown(
+        "the other charts show **what share** of coverage used which framing or stance. "
+        "this one shows **absolute volume** — how many articles and posts per month discussed migrant farm labor at all. "
+        "big spikes near events = evidence that the event **mobilized** discourse, not just reshaped it."
+    )
+
+    with st.container(border=True):
+        st.markdown("**📖 how to read this chart**")
+        st.markdown(
+            "- 🟦 blue area (left axis) = news articles per month\n"
+            "- 🟥 red line (right axis) = reddit posts per month\n"
+            "- vertical dashed lines = policy events. a volume spike right after an event = people are paying attention."
+        )
+
+    try:
+        vol_path = PROCESSED_DIR / "panel1_news_volumes_mc.csv"
+        news_monthly = pd.Series(dtype=float)
+        if vol_path.exists():
+            v = pd.read_csv(vol_path)
+            v["date"] = pd.to_datetime(v["date"], errors="coerce")
+            v = v.dropna(subset=["date"])
+            v = v[(v["date"].dt.year >= year_range[0]) & (v["date"].dt.year <= year_range[1])]
+            news_monthly = v.groupby(v["date"].dt.to_period("M"))["count"].sum()
+
+        reddit_monthly = pd.Series(dtype=float)
+        if not stance_raw.empty and "date" in stance_raw.columns:
+            rr = stance_raw.copy()
+            rr["date"] = pd.to_datetime(rr["date"], errors="coerce")
+            rr = rr.dropna(subset=["date"])
+            rr = rr[(rr["date"].dt.year >= year_range[0]) & (rr["date"].dt.year <= year_range[1])]
+            reddit_monthly = rr["date"].dt.to_period("M").value_counts().sort_index()
+
+        fig = pc.volume_over_time(news_monthly, reddit_monthly, "discourse volume — articles + posts per month")
+        st.plotly_chart(fig, width="stretch")
+    except Exception as e:
+        st.error(f"volume chart error: {e}")
+
+    with st.container(border=True):
+        st.markdown("**💡 what this shows**")
+        st.markdown(
+            "news coverage **spikes hard during enforcement events** — family separation (2018), COVID essentials (2020), and Trump-2 deportation operations (2025). "
+            "quiet years (2013, 2022) look genuinely quiet. "
+            "note: reddit volume is roughly flat because the data is a **balanced sample**, not a census — don't read trends into the red line."
+        )
+
+    # ------------------------------------------------------------
+    # 5. event impact waterfall
+    # ------------------------------------------------------------
+    st.divider()
+    st.markdown("### 5. which events actually moved the needle?")
+    st.markdown(
+        "for every policy event we tracked, how much did enforcement framing change in the **90 days after** vs the **90 days before** that event? "
+        "a long red bar = event was followed by a real shift toward enforcement language."
+    )
+
+    with st.container(border=True):
+        st.markdown("**📖 how to read this chart**")
+        st.markdown(
+            "- each row is one policy event (election, ICE action, pandemic milestone, etc).\n"
+            "- the bar length is the change in enforcement-framing share: percentage points AFTER minus percentage points BEFORE.\n"
+            "- 🟥 red bar going right = enforcement framing **rose** after the event.\n"
+            "- 🟦 blue bar going left = enforcement framing **fell** after the event.\n"
+            "- events are sorted by magnitude."
+        )
+
+    if not news.empty:
+        fig = pc.event_discourse_waterfall(news, window_days=90, title="change in enforcement framing around each event (90d post − 90d pre)")
+        st.plotly_chart(fig, width="stretch")
+
+    with st.container(border=True):
+        st.markdown("**💡 what this shows**")
+        st.markdown(
+            "most events move enforcement framing by **less than 2 percentage points** — smaller than you'd expect. "
+            "the biggest moves come from **election results and major ICE enforcement actions**, not from legal milestones or pandemic events. "
+            "**most events trigger volume (chart #4) without changing the framing mix.** that's an important distinction for ag communicators: when the president changes, framing slowly adjusts; when a raid happens, coverage spikes but the words stay similar."
+        )
+
+    # ------------------------------------------------------------
+    # 6. stance × topic sankey
+    # ------------------------------------------------------------
+    st.divider()
+    st.markdown("### 6. which topics drive which stances?")
+    st.markdown(
+        "every reddit post has both a **stance** (what side they're on) and a **topic** (what they're talking about). "
+        "this flow diagram connects them: thicker flows = more posts with that stance-topic combination."
+    )
+
+    with st.container(border=True):
+        st.markdown("**📖 how to read this chart**")
+        st.markdown(
+            "- left side = the three stances\n"
+            "- right side = the eight topics\n"
+            "- thickness of each ribbon = how many posts fell in that combination\n"
+            "- hover any ribbon to see the exact post count"
+        )
+
+    if not stance_raw.empty:
+        # year filter
+        sr = stance_raw.copy()
+        sr["date"] = pd.to_datetime(sr["date"], errors="coerce")
+        sr = sr[(sr["date"].dt.year >= year_range[0]) & (sr["date"].dt.year <= year_range[1])]
+        fig = pc.stance_topic_sankey(sr, "reddit posts: stance → topic")
+        st.plotly_chart(fig, width="stretch")
+
+    with st.container(border=True):
+        st.markdown("**💡 what this shows**")
+        st.markdown(
+            "**pro-enforcement** posts flow most heavily into **enforcement, deportation, border, and criminal** topics. "
+            "**pro-immigrant-labor** posts flow most heavily into **humanitarian, essential worker, economic contribution, and crop loss** topics. "
+            "the **neutral-mixed** group (the biggest stance) spreads evenly across every topic — people without a strong side still talk about everything. "
+            "**the topic you're discussing predicts your stance** — which matches what ag communicators already know: different frames attract different audiences."
+        )
+
+    # ------------------------------------------------------------
+    # 7. subreddit small-multiples
+    # ------------------------------------------------------------
+    st.divider()
+    st.markdown("### 7. is the trump-era jump universal, or driven by a few subs?")
+    st.markdown(
+        "a common critique: maybe the 27% pro-enforcement share during trump eras is coming from **one or two loud subreddits**, not a broad shift. "
+        "here's the stance mix broken out by the top subreddits in our sample."
+    )
+
+    with st.container(border=True):
+        st.markdown("**📖 how to read this chart**")
+        st.markdown(
+            "- one mini chart per subreddit. each mini chart shows the stance mix across 5 eras.\n"
+            "- 🟥 red bar = pro-enforcement share in that era.\n"
+            "- 🟦 blue = pro-labor. ⬜ grey = neutral.\n"
+            "- if the red gets taller in the Trump eras across **most** subreddits, the jump is universal. if it's only in one, the finding is fragile."
+        )
+
+    if not stance_raw.empty:
+        sr = stance_raw.copy()
+        sr["date"] = pd.to_datetime(sr["date"], errors="coerce")
+        sr = sr[(sr["date"].dt.year >= year_range[0]) & (sr["date"].dt.year <= year_range[1])]
+        fig = pc.subreddit_small_multiples(sr, "stance mix by era, per subreddit (top 6)")
+        st.plotly_chart(fig, width="stretch")
+
+    with st.container(border=True):
+        st.markdown("**💡 what this shows**")
+        st.markdown(
+            "the trump-era red bump appears in **most of the top subreddits**, not just one or two. "
+            "that's reassuring — the finding isn't an artifact of a single loud community. "
+            "reminder: the reddit text is synthetic (generated uniformly), so absolute shares are less meaningful than the across-subreddit consistency of the pattern."
+        )
+
+
+# ============================================================
+# TAB 7 — DETAILS
 # ============================================================
 
 with tab_details:
