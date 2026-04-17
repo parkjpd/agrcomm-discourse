@@ -73,8 +73,9 @@ def _event_shapes(y_min: float = 0, y_max: float = 1, yref: str = "paper"):
 
 # ---------- panel 1: language share ----------
 
-def language_stacked_area(share: pd.DataFrame, title: str) -> go.Figure:
-    """share is a df with index=date, columns=[right_loaded, left_loaded, neutral]."""
+def language_stacked_area(share: pd.DataFrame, title: str, mode: str = "share") -> go.Figure:
+    """share is a df with index=date. columns are either bucket shares (mode='share')
+    or raw counts (mode='volume'). mode controls y-axis formatting."""
     kw = load_keywords()["buckets"]
     fig = go.Figure()
     if share.empty:
@@ -85,6 +86,7 @@ def language_stacked_area(share: pd.DataFrame, title: str) -> go.Figure:
     for bucket in ("right_loaded", "left_loaded", "neutral"):
         if bucket not in share.columns:
             continue
+        hover = "%{x|%Y-Q%q} — " + kw[bucket]["display"] + (": %{y:.1%}<extra></extra>" if mode == "share" else ": %{y:,.0f} articles<extra></extra>")
         fig.add_trace(
             go.Scatter(
                 x=share.index,
@@ -94,16 +96,17 @@ def language_stacked_area(share: pd.DataFrame, title: str) -> go.Figure:
                 name=kw[bucket]["display"],
                 line=dict(width=0.5, color=LANG_COLORS[bucket]),
                 fillcolor=LANG_COLORS[bucket],
-                hovertemplate="%{x|%Y-Q%q} — " + kw[bucket]["display"] + ": %{y:.1%}<extra></extra>",
+                hovertemplate=hover,
             )
         )
 
     shapes, annotations = _event_shapes()
+    y_conf = dict(tickformat=".0%", range=[0, 1]) if mode == "share" else dict(tickformat=",.0f", title="articles")
     fig.update_layout(
         title=title,
         xaxis_title="year",
-        yaxis_title="share of mentions",
-        yaxis=dict(tickformat=".0%", range=[0, 1]),
+        yaxis_title="share of mentions" if mode == "share" else "article volume",
+        yaxis=y_conf,
         hovermode="x unified",
         shapes=shapes,
         annotations=annotations,

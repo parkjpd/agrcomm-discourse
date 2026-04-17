@@ -268,6 +268,7 @@ with tab_lang:
     col1, col2 = st.columns([3, 1])
     with col2:
         source_choice = st.radio("source", ["news", "reddit", "both"], horizontal=False)
+        view_mode = st.radio("view", ["share (%)", "volume (raw)"], horizontal=False, help="share normalizes by total quarterly coverage — use to see framing mix. volume shows raw article counts — use to see total attention.")
 
     news = _news_share()
     reddit = _reddit_share_lang()
@@ -279,14 +280,34 @@ with tab_lang:
     news_s = _slice(news)
     reddit_s = _slice(reddit)
 
+    # volume mode: get raw counts (pre-normalization) from load fn
+    news_vol = load_news_volumes() if view_mode == "volume (raw)" else None
+    reddit_vol = load_reddit_volumes() if view_mode == "volume (raw)" else None
+
+    def _pivot_volume(df):
+        if df is None or df.empty:
+            return pd.DataFrame()
+        d = df.groupby(["date", "bucket"])["count"].sum().reset_index()
+        piv = d.pivot(index="date", columns="bucket", values="count").fillna(0)
+        for b in ("right_loaded", "left_loaded", "neutral"):
+            if b not in piv.columns:
+                piv[b] = 0
+        piv.index = pd.to_datetime(piv.index)
+        piv = piv.sort_index()
+        return piv.loc[(piv.index.year >= year_range[0]) & (piv.index.year <= year_range[1])]
+
     with col1:
+        mode_key = "volume" if view_mode.startswith("volume") else "share"
         if source_choice == "news":
-            st.plotly_chart(pc.language_stacked_area(news_s, "language share — news"), width="stretch")
+            src = _pivot_volume(news_vol) if mode_key == "volume" else news_s
+            st.plotly_chart(pc.language_stacked_area(src, f"language {mode_key} — news", mode=mode_key), width="stretch")
         elif source_choice == "reddit":
-            st.plotly_chart(pc.language_stacked_area(reddit_s, "language share — reddit"), width="stretch")
+            src = _pivot_volume(reddit_vol) if mode_key == "volume" else reddit_s
+            st.plotly_chart(pc.language_stacked_area(src, f"language {mode_key} — reddit", mode=mode_key), width="stretch")
         else:
-            st.plotly_chart(pc.language_stacked_area(news_s, "language share — news"), width="stretch")
-            st.plotly_chart(pc.language_stacked_area(reddit_s, "language share — reddit"), width="stretch")
+            for label, shp, vp in [("news", news_s, news_vol), ("reddit", reddit_s, reddit_vol)]:
+                src = _pivot_volume(vp) if mode_key == "volume" else shp
+                st.plotly_chart(pc.language_stacked_area(src, f"language {mode_key} — {label}", mode=mode_key), width="stretch")
 
     # hinge-point table - compare pre vs post for each event
     st.markdown("##### era comparison: enforcement-framed share")
