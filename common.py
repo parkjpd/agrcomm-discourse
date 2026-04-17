@@ -11,10 +11,11 @@ import yaml
 
 ROOT = Path(__file__).parent
 
-# pick up .env if present. importing here means any module using common inherits it.
+# pick up .env if present. override=True ensures a real key in .env wins over an empty
+# env var from a parent shell (claude code sandbox sets ANTHROPIC_API_KEY='' for safety).
 try:
     from dotenv import load_dotenv
-    load_dotenv(ROOT / ".env")
+    load_dotenv(ROOT / ".env", override=True)
 except ImportError:
     pass
 CONFIG_DIR = ROOT / "config"
