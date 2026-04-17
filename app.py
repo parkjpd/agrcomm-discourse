@@ -338,8 +338,52 @@ with tab_futures:
                 "with only ~65 quarterly observations and a relatively stable news framing series, "
                 "current correlations are weak. reddit stance share (more variable) is the better candidate for future work."
             )
+
+            st.markdown("##### event-window returns")
+            st.caption(
+                "30-trading-day cumulative return for each ticker in the window before and after each policy event. "
+                "`post_minus_pre` isolates the event-specific move. negative on labor-heavy tickers suggests enforcement priced in."
+            )
+            from panels.panel4_futures import event_window_returns
+            ew_window = st.slider("window (trading days)", 10, 60, 30, step=5)
+            ew = event_window_returns(window_days=ew_window)
+            if ew.empty:
+                st.info("no event-window data.")
+            else:
+                display = ew.copy()
+                display["pre_return"] = display["pre_return"].map(lambda v: f"{v:+.1%}" if pd.notna(v) else "—")
+                display["post_return"] = display["post_return"].map(lambda v: f"{v:+.1%}" if pd.notna(v) else "—")
+                display["post_minus_pre"] = display["post_minus_pre"].map(lambda v: f"{v:+.1%}" if pd.notna(v) else "—")
+                st.dataframe(display, width="stretch", hide_index=True)
+
+                # pivot to matrix event x ticker for heatmap
+                import plotly.graph_objects as go
+                mat = ew.pivot(index="event", columns="ticker", values="post_minus_pre")
+                ordered_events = ew.drop_duplicates("event")["event"].tolist()
+                mat = mat.reindex(ordered_events)
+                ticker_cols = [t for t in TICKERS_ALL() if t in mat.columns]
+                mat = mat[ticker_cols]
+                fig_ev = go.Figure(
+                    go.Heatmap(
+                        z=mat.values,
+                        x=[TICKER_DISPLAY.get(t, t) for t in mat.columns],
+                        y=mat.index,
+                        colorscale="RdBu",
+                        zmid=0,
+                        colorbar=dict(title="Δ return", tickformat=".0%"),
+                        hovertemplate="%{y} — %{x}: %{z:+.1%}<extra></extra>",
+                    )
+                )
+                fig_ev.update_layout(
+                    title=f"event-window return shift (post−pre, ±{ew_window} trading days)",
+                    height=420,
+                    margin=dict(t=60, b=40, l=240, r=20),
+                )
+                st.plotly_chart(fig_ev, width="stretch")
     except Exception as e:
         st.error(f"panel 4 error: {e}")
+        import traceback
+        st.code(traceback.format_exc())
 
 
 # ===== data =====

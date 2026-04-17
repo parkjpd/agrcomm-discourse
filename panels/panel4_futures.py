@@ -67,6 +67,44 @@ def _enforcement_share_quarterly() -> pd.Series:
     return share["right_loaded"]
 
 
+def event_window_returns(window_days: int = 30) -> pd.DataFrame:
+    """
+    for each event in events.yaml, compute cumulative return for each ticker
+    over [-window, 0] (pre) and [0, +window] (post) trading-day windows.
+    returns long-form df: (event, ticker, pre_return, post_return, diff).
+    """
+    from common import load_events
+    from collectors import futures as fut_col
+
+    daily = fut_col.pull_all()
+    rows = []
+    for ev in load_events():
+        ev_date = pd.to_datetime(str(ev["date"])[:10])
+        for ticker, df in daily.items():
+            if df is None or df.empty:
+                continue
+            d = df.copy()
+            d["date"] = pd.to_datetime(d["date"])
+            d = d.sort_values("date").set_index("date")
+            # pick window of trading days around the event
+            pre = d.loc[ev_date - pd.Timedelta(days=window_days * 2):ev_date].tail(window_days)
+            post = d.loc[ev_date:ev_date + pd.Timedelta(days=window_days * 2)].head(window_days)
+            if len(pre) < 5 or len(post) < 5:
+                continue
+            pre_ret = (pre["close"].iloc[-1] / pre["close"].iloc[0]) - 1 if len(pre) else None
+            post_ret = (post["close"].iloc[-1] / post["close"].iloc[0]) - 1 if len(post) else None
+            rows.append({
+                "event": ev["shown"],
+                "date": ev_date.date().isoformat(),
+                "category": ev.get("category", ""),
+                "ticker": ticker,
+                "pre_return": pre_ret,
+                "post_return": post_ret,
+                "post_minus_pre": (post_ret or 0) - (pre_ret or 0),
+            })
+    return pd.DataFrame(rows)
+
+
 def correlation_table() -> pd.DataFrame:
     """correlation between enforcement-framed share and each ticker's quarterly returns."""
     fut = load_futures_quarterly()
