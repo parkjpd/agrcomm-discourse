@@ -605,6 +605,148 @@ def _rgba_from_hex(hex_color: str, alpha: float) -> str:
     return f"rgba({r},{g},{b},{alpha})"
 
 
+def platform_stance_comparison(dfs_by_platform: dict[str, pd.DataFrame], title: str, stance_col: str = "true_stance") -> go.Figure:
+    """grouped bar chart comparing stance mix across platforms.
+    dfs_by_platform: {'reddit': df, 'fb_ads': df, 'youtube': df}.
+    every df must have a `stance_col` column."""
+    fig = go.Figure()
+    if not dfs_by_platform:
+        fig.add_annotation(text="no platforms", x=0.5, y=0.5, xref="paper", yref="paper", showarrow=False)
+        fig.update_layout(title=title)
+        return fig
+
+    stances = ["pro_enforcement", "pro_immigrant_labor", "neutral_mixed"]
+    display = {"pro_enforcement": "🟥 pro-enforcement", "pro_immigrant_labor": "🟦 pro-labor", "neutral_mixed": "⬜ neutral / mixed"}
+
+    platforms = list(dfs_by_platform.keys())
+    for stance in stances:
+        shares = []
+        for p in platforms:
+            df = dfs_by_platform[p]
+            if df is None or df.empty or stance_col not in df.columns:
+                shares.append(0)
+                continue
+            sub = df.dropna(subset=[stance_col])
+            if sub.empty:
+                shares.append(0)
+                continue
+            shares.append((sub[stance_col] == stance).mean())
+        fig.add_trace(go.Bar(
+            x=platforms, y=shares,
+            name=display[stance],
+            marker_color=STANCE_COLORS[stance],
+            text=[f"{v:.0%}" for v in shares],
+            textposition="outside",
+            hovertemplate="%{x} — " + display[stance] + ": %{y:.1%}<extra></extra>",
+        ))
+
+    fig.update_layout(
+        title=title,
+        barmode="group",
+        yaxis=dict(tickformat=".0%", range=[0, 1]),
+        height=420,
+        margin=dict(t=60, b=40, l=60, r=20),
+        legend=dict(orientation="h", yanchor="bottom", y=-0.2, xanchor="left", x=0),
+    )
+    return fig
+
+
+def platform_volume_over_time(monthly_by_platform: dict[str, pd.Series], title: str) -> go.Figure:
+    """multi-line chart: one line per platform showing posts/articles/comments per month.
+    normalized to each platform's own max so we can compare shape, not absolute size."""
+    fig = go.Figure()
+    if not monthly_by_platform:
+        fig.add_annotation(text="no platforms", x=0.5, y=0.5, xref="paper", yref="paper", showarrow=False)
+        fig.update_layout(title=title)
+        return fig
+
+    platform_colors = {
+        "news": "#2e75b6",
+        "reddit": "#c23b22",
+        "fb_ads": "#1877f2",
+        "youtube": "#ff0000",
+    }
+
+    for platform, series in monthly_by_platform.items():
+        if series is None or len(series) == 0:
+            continue
+        s = series.copy().sort_index()
+        if isinstance(s.index, pd.PeriodIndex):
+            s.index = s.index.to_timestamp()
+        denom = s.max() if s.max() > 0 else 1
+        normalized = s / denom
+        fig.add_trace(go.Scatter(
+            x=s.index, y=normalized,
+            mode="lines",
+            name=platform,
+            line=dict(color=platform_colors.get(platform, "#888"), width=2),
+            hovertemplate="%{x|%Y-%m} — " + platform + ": %{y:.0%} of that platform's peak<extra></extra>",
+        ))
+
+    shapes, annotations = _event_shapes(y_min=0, y_max=1, yref="paper")
+    fig.update_layout(
+        title=title,
+        xaxis_title="month",
+        yaxis=dict(title="volume as share of platform's peak month", tickformat=".0%", range=[0, 1.05]),
+        hovermode="x unified",
+        shapes=shapes, annotations=annotations,
+        height=440,
+        margin=dict(t=90, b=40, l=60, r=20),
+        legend=dict(orientation="h", yanchor="bottom", y=-0.2, xanchor="left", x=0),
+    )
+    return fig
+
+
+def top_entities_by_stance(df: pd.DataFrame, entity_col: str, title: str, top_n: int = 10, stance_col: str = "true_stance") -> go.Figure:
+    """horizontal stacked bar: top N entities (fb sponsors or yt channels) by post count,
+    stacked by stance. shows who's pushing which side."""
+    fig = go.Figure()
+    if df is None or df.empty or entity_col not in df.columns:
+        fig.add_annotation(text=f"no {entity_col}", x=0.5, y=0.5, xref="paper", yref="paper", showarrow=False)
+        fig.update_layout(title=title)
+        return fig
+
+    d = df.dropna(subset=[entity_col, stance_col]).copy()
+    if d.empty:
+        fig.add_annotation(text="no labeled rows", x=0.5, y=0.5, xref="paper", yref="paper", showarrow=False)
+        fig.update_layout(title=title)
+        return fig
+
+    top = d[entity_col].value_counts().head(top_n).index.tolist()
+    d = d[d[entity_col].isin(top)]
+    crosstab = pd.crosstab(d[entity_col], d[stance_col])
+    crosstab = crosstab.loc[top]
+    for s in ("pro_enforcement", "pro_immigrant_labor", "neutral_mixed"):
+        if s not in crosstab.columns:
+            crosstab[s] = 0
+    crosstab = crosstab[["pro_enforcement", "pro_immigrant_labor", "neutral_mixed"]]
+    # sort so the highest pro-enforcement share is at the top (most polarized)
+    totals = crosstab.sum(axis=1).replace(0, 1)
+    enf_share = crosstab["pro_enforcement"] / totals
+    order = enf_share.sort_values(ascending=True).index.tolist()
+    crosstab = crosstab.loc[order]
+
+    display = {"pro_enforcement": "🟥 pro-enforcement", "pro_immigrant_labor": "🟦 pro-labor", "neutral_mixed": "⬜ neutral / mixed"}
+    for stance in ("pro_enforcement", "pro_immigrant_labor", "neutral_mixed"):
+        fig.add_trace(go.Bar(
+            y=crosstab.index, x=crosstab[stance],
+            name=display[stance],
+            orientation="h",
+            marker_color=STANCE_COLORS[stance],
+            hovertemplate="%{y}<br>" + display[stance] + ": %{x} posts<extra></extra>",
+        ))
+
+    fig.update_layout(
+        title=title,
+        barmode="stack",
+        xaxis_title="posts / ads / comments",
+        height=max(380, 30 * len(crosstab) + 120),
+        margin=dict(t=60, b=60, l=280, r=40),
+        legend=dict(orientation="h", yanchor="bottom", y=-0.12, xanchor="left", x=0),
+    )
+    return fig
+
+
 def subreddit_small_multiples(reddit_raw: pd.DataFrame, title: str, top_n: int = 6) -> go.Figure:
     """one mini stacked-bar per subreddit showing stance mix across eras.
     helps see whether the trump-era jump is universal or driven by a few subs."""

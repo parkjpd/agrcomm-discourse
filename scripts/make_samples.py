@@ -106,6 +106,83 @@ NEWS_DOMAINS = [
     "latimes.com", "miamiherald.com", "cleveland.com", "houstonchronicle.com",
 ]
 
+# ---------- facebook ad sponsors ----------
+# names mimic the kinds of PACs / advocacy groups that actually run immigration ads.
+# the right-leaning vs left-leaning names map loosely onto stance — but not perfectly,
+# because real sponsors sometimes run mixed-message buys.
+
+FB_SPONSORS_RIGHT = [
+    "Americans for Border Security", "Secure Our Nation PAC", "Enforcement First Coalition",
+    "Stop The Invasion Fund", "American Workers First", "Border Patrol Support Committee",
+    "Citizens for Immigration Reform", "Heartland Values PAC",
+]
+FB_SPONSORS_LEFT = [
+    "Farmworker Justice Fund", "United We Dream Action", "Essential Workers Coalition",
+    "Immigrant Rights Now", "Dignity for Dairy Workers", "Defend Families Together",
+    "Agricultural Workers Alliance", "New Americans PAC",
+]
+FB_SPONSORS_NEUTRAL = [
+    "Ag Policy Institute", "Rural America Forum", "US Farm Coalition",
+    "H-2A Employers Association", "Food System Facts", "National Agricultural Outlook",
+]
+
+FB_CTA = ["DONATE NOW", "LEARN MORE", "SIGN THE PETITION", "JOIN US", "WATCH THE AD", "CHIP IN $5"]
+
+FB_HEADLINE_TEMPLATES = {
+    "pro_enforcement": [
+        "Stop the {topic_cue}", "End the {kw_term} Crisis Now",
+        "Secure Our Borders. Protect Our Jobs.", "Tell Congress: No More {kw_term}",
+        "Enough is Enough: {topic_cue} Must End",
+    ],
+    "pro_immigrant_labor": [
+        "These Workers Feed America", "Protect {kw_term} — Protect Our Food Supply",
+        "Families, Not Felons", "Our Farms Can't Run Without Them",
+        "Defend {kw_term} Rights Today",
+    ],
+    "neutral_mixed": [
+        "What You Need to Know About the H-2A Program",
+        "The Facts About {topic_cue}", "Inside the Ag Labor Debate",
+        "Understanding {kw_term} in US Agriculture",
+    ],
+}
+
+# ---------- youtube video topics + commenter styles ----------
+# youtube comments skew shorter, more reactive, more emoji. stance cues are blunter.
+
+YT_CHANNELS = [
+    "PBS NewsHour", "Vice News", "Fox News", "CBS Evening News",
+    "Farm Bureau Today", "Modern Farmer", "Univision News", "NowThis",
+    "The Young Turks", "Daily Wire", "AP Archive", "Frontline PBS",
+]
+
+YT_VIDEO_HOOKS = [
+    "ICE raids at {anchor}", "life for farmworkers at {anchor}",
+    "inside a {anchor} deportation case", "why {anchor} can't find workers",
+    "how H-2A actually works at {anchor}", "{anchor}: the human cost of enforcement",
+    "Congress debates {kw_term} impact on {anchor}",
+]
+
+YT_COMMENT_STYLES = {
+    "pro_enforcement": [
+        "Finally someone saying it 👏", "This is exactly the problem!!",
+        "Deport them all. No exceptions.", "Taking jobs from Americans is not OK.",
+        "Enforce the law or we don't have a country.", "How is this even controversial",
+    ],
+    "pro_immigrant_labor": [
+        "These people work harder than anyone I know ❤️",
+        "Without them your grocery bill doubles. Period.",
+        "Humans are not illegal.", "Path to citizenship NOW",
+        "My grandpa came here this way. Give them a chance.",
+        "This is heartbreaking to watch 💔",
+    ],
+    "neutral_mixed": [
+        "Complicated issue. Not a simple fix.", "What's the actual H-2A cap right now?",
+        "Both sides make points here.", "Interesting reporting, thanks for posting",
+        "Would love to hear from an actual farmer on this",
+        "Source on that stat?",
+    ],
+}
+
 # ---------- era helpers ----------
 
 def _era_for(d: date):
@@ -253,6 +330,138 @@ def generate_reddit(
     return rows
 
 
+def generate_fb_ads(
+    start: date = date(2018, 5, 1),  # meta ad library starts ~may 2018
+    end: date = date(2026, 6, 30),
+    per_year: int = 180,
+) -> list[dict]:
+    """synthetic political/issue ads about immigration + farm labor.
+    ads are short, sponsor-driven, and run in bursts around election cycles."""
+    rows = []
+    year = start.year
+    while year <= end.year:
+        # election years get more ads (mirrors real ad-library volume pattern)
+        multiplier = 2.2 if year in (2018, 2020, 2022, 2024, 2026) else 1.0
+        n = int(per_year * multiplier)
+        for _ in range(n):
+            month = random.randint(1, 12)
+            day = random.randint(1, 28)
+            try:
+                d = date(year, month, day)
+            except ValueError:
+                continue
+            if d < start or d > end:
+                continue
+            era = _era_for(d)
+            kw_bucket = random.choices(
+                ["right_loaded", "left_loaded", "neutral"],
+                weights=[era[3], era[4], era[5]],
+                k=1,
+            )[0]
+            stance = random.choices(
+                ["pro_enforcement", "pro_immigrant_labor", "neutral_mixed"],
+                weights=[era[6], era[7], era[8]],
+                k=1,
+            )[0]
+            topic = _weighted_pick(_parse_topic_mix(era[9]))
+            kw_term = random.choice(KW_TERMS[kw_bucket])
+            topic_cue = random.choice(TOPIC_CUES[topic])
+
+            if stance == "pro_enforcement":
+                sponsor = random.choice(FB_SPONSORS_RIGHT)
+            elif stance == "pro_immigrant_labor":
+                sponsor = random.choice(FB_SPONSORS_LEFT)
+            else:
+                sponsor = random.choice(FB_SPONSORS_NEUTRAL)
+
+            headline = random.choice(FB_HEADLINE_TEMPLATES[stance]).format(
+                kw_term=kw_term.title(), topic_cue=topic_cue.title()
+            )
+            body_cue = random.choice(STANCE_CUES[stance])
+            text = f"{headline}\n\n{body_cue.capitalize()}. This {topic_cue} is why we're asking you to act. {random.choice(FB_CTA)}."
+
+            # spend + impressions are reported as ranges in the real api
+            spend_low = random.choice([100, 500, 1000, 5000, 10000, 50000])
+            impr_low = spend_low * random.choice([30, 50, 80, 120])
+            rows.append({
+                "source": "synthetic_fb_ads",
+                "date": d.isoformat(),
+                "page_name": sponsor,
+                "title": headline,
+                "text": text,
+                "spend_lower": spend_low,
+                "spend_upper": spend_low * 5,
+                "impressions_lower": impr_low,
+                "impressions_upper": impr_low * 5,
+                "url": f"https://www.facebook.com/ads/library/?id={random.randint(100000000000, 999999999999)}",
+                "true_bucket": kw_bucket,
+                "true_stance": stance,
+                "true_topic": topic,
+            })
+        year += 1
+    return rows
+
+
+def generate_youtube_comments(
+    start: date = date(2012, 1, 1),  # youtube api coverage practical floor
+    end: date = date(2026, 6, 30),
+    per_year: int = 600,
+) -> list[dict]:
+    """synthetic youtube comments on immigration / farmworker videos.
+    shorter + more reactive than reddit. grouped under plausible video titles."""
+    rows = []
+    year = start.year
+    while year <= end.year:
+        # one 'video' every few weeks, each with a burst of comments
+        n = per_year
+        for _ in range(n):
+            month = random.randint(1, 12)
+            day = random.randint(1, 28)
+            try:
+                d = date(year, month, day)
+            except ValueError:
+                continue
+            if d < start or d > end:
+                continue
+            era = _era_for(d)
+            kw_bucket = random.choices(
+                ["right_loaded", "left_loaded", "neutral"],
+                weights=[era[3], era[4], era[5]],
+                k=1,
+            )[0]
+            stance = random.choices(
+                ["pro_enforcement", "pro_immigrant_labor", "neutral_mixed"],
+                weights=[era[6], era[7], era[8]],
+                k=1,
+            )[0]
+            topic = _weighted_pick(_parse_topic_mix(era[9]))
+            anchor = random.choice(FARM_ANCHORS)
+            kw_term = random.choice(KW_TERMS[kw_bucket])
+
+            video_title = random.choice(YT_VIDEO_HOOKS).format(anchor=anchor, kw_term=kw_term)
+            channel = random.choice(YT_CHANNELS)
+            comment = random.choice(YT_COMMENT_STYLES[stance])
+
+            video_id = f"vid_{year}_{random.randint(100000, 999999)}"
+            likes = random.randint(0, 2500)
+            rows.append({
+                "source": "synthetic_youtube",
+                "date": d.isoformat(),
+                "channel": channel,
+                "video_title": video_title,
+                "video_id": video_id,
+                "title": video_title,
+                "text": comment,
+                "likes": likes,
+                "url": f"https://www.youtube.com/watch?v={video_id}",
+                "true_bucket": kw_bucket,
+                "true_stance": stance,
+                "true_topic": topic,
+            })
+        year += 1
+    return rows
+
+
 def _write_csv(path, rows):
     if not rows:
         return
@@ -266,8 +475,12 @@ def main():
     ensure_dirs()
     news = generate_news()
     reddit = generate_reddit()
+    fb_ads = generate_fb_ads()
+    youtube = generate_youtube_comments()
     _write_csv(SAMPLES_DIR / "news.csv", news)
     _write_csv(SAMPLES_DIR / "reddit.csv", reddit)
+    _write_csv(SAMPLES_DIR / "fb_ads.csv", fb_ads)
+    _write_csv(SAMPLES_DIR / "youtube.csv", youtube)
     readme = SAMPLES_DIR / "README.md"
     readme.write_text(
         "# synthetic sample data\n\n"
@@ -276,8 +489,10 @@ def main():
         "swap in the real collectors for actual analysis.\n\n"
         f"- news.csv: {len(news)} rows, 2010-2026\n"
         f"- reddit.csv: {len(reddit)} rows, 2015-2026\n"
+        f"- fb_ads.csv: {len(fb_ads)} rows, 2018-2026 (meta ad library starts 2018)\n"
+        f"- youtube.csv: {len(youtube)} rows, 2012-2026\n"
     )
-    print(f"wrote {len(news)} news, {len(reddit)} reddit to {SAMPLES_DIR}")
+    print(f"wrote {len(news)} news, {len(reddit)} reddit, {len(fb_ads)} fb_ads, {len(youtube)} youtube to {SAMPLES_DIR}")
 
 
 if __name__ == "__main__":

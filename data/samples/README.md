@@ -6,3 +6,5 @@ swap in the real collectors for actual analysis.
 
 - news.csv: 8254 rows, 2010-2026
 - reddit.csv: 56001 rows, 2015-2026
+- fb_ads.csv: 2376 rows, 2018-2026 (meta ad library starts 2018)
+- youtube.csv: 8705 rows, 2012-2026

@@ -47,6 +47,27 @@ panel2:
   kappa_iterate: 0.4
   validation_sample_size: 200
 
+fb_ads:
+  # meta ad library (political + issue ads). covers 2018+. requires META_AD_LIBRARY_TOKEN.
+  search_terms:
+    - "farmworker"
+    - "H-2A"
+    - "migrant worker"
+    - "deportation"
+    - "immigration reform"
+    - "border security"
+    - "essential worker"
+
+youtube:
+  # youtube data api v3. free 10k units/day, requires YOUTUBE_API_KEY.
+  queries:
+    - "farmworker immigration"
+    - "H-2A visa program"
+    - "ICE raid farm workers"
+    - "migrant labor deportation"
+    - "essential farmworker covid"
+    - "border crisis agriculture"
+
 panel3:
   embedding_model: "sentence-transformers/all-MiniLM-L6-v2"
   min_topic_size: 30

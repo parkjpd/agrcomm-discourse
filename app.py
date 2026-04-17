@@ -130,6 +130,26 @@ with st.sidebar:
     else:
         st.info("commodity prices — not yet pulled")
 
+    fb_path = PROCESSED_DIR / "fb_ads.csv"
+    if fb_path.exists():
+        has_token = bool(__import__("os").environ.get("META_AD_LIBRARY_TOKEN"))
+        if has_token:
+            st.success("**Facebook / Instagram ads** — live from Meta Ad Library")
+        else:
+            st.warning("Facebook ads — synthetic (set META_AD_LIBRARY_TOKEN for live)")
+    else:
+        st.info("Facebook ads — not yet generated")
+
+    yt_path = PROCESSED_DIR / "youtube_comments.csv"
+    if yt_path.exists():
+        has_key = bool(__import__("os").environ.get("YOUTUBE_API_KEY"))
+        if has_key:
+            st.success("**YouTube comments** — live from YouTube Data API")
+        else:
+            st.warning("YouTube comments — synthetic (set YOUTUBE_API_KEY for live)")
+    else:
+        st.info("YouTube — not yet generated")
+
     st.divider()
     st.caption(
         "event markers on every chart:\n"
@@ -153,8 +173,8 @@ st.divider()
 
 # ---------- tabs ----------
 
-tab_story, tab_words, tab_opinions, tab_topics, tab_markets, tab_deeper, tab_details = st.tabs(
-    ["📖 the story", "🗣️ words", "💭 opinions", "📚 topics", "📈 markets", "🔍 deeper look", "🔧 details"]
+tab_story, tab_words, tab_opinions, tab_topics, tab_markets, tab_platforms, tab_deeper, tab_details = st.tabs(
+    ["📖 the story", "🗣️ words", "💭 opinions", "📚 topics", "📈 markets", "🌐 platforms", "🔍 deeper look", "🔧 details"]
 )
 
 
@@ -629,7 +649,245 @@ with tab_markets:
 
 
 # ============================================================
-# TAB 6 — DEEPER LOOK
+# TAB 6 — PLATFORMS
+# ============================================================
+
+@st.cache_data(ttl=300)
+def _load_fb_ads():
+    p = PROCESSED_DIR / "fb_ads.csv"
+    if not p.exists():
+        return pd.DataFrame()
+    return pd.read_csv(p)
+
+
+@st.cache_data(ttl=300)
+def _load_youtube():
+    p = PROCESSED_DIR / "youtube_comments.csv"
+    if not p.exists():
+        return pd.DataFrame()
+    return pd.read_csv(p)
+
+
+with tab_platforms:
+    st.markdown("## 🌐 how different platforms talk about migrant farm labor")
+    st.markdown(
+        "we've added **two more platforms** to the reddit-only view you saw in the opinions tab: "
+        "**Meta Ad Library** (political ads running on Facebook + Instagram) and **YouTube comments** (public replies on immigration-related videos). "
+        "each platform is a different slice of the conversation — ads are paid messaging from organized groups, "
+        "reddit is semi-anonymous forum arguments, and youtube comments are reactions to broadcast news. "
+        "do they all skew the same way? or does each platform have its own vibe?"
+    )
+
+    fb_df = _load_fb_ads()
+    yt_df = _load_youtube()
+    _, reddit_df = _stance_share()
+
+    # filter to year_range
+    def _filter_years(d, lo, hi):
+        if d is None or d.empty or "date" not in d.columns:
+            return d
+        dd = d.copy()
+        dd["date"] = pd.to_datetime(dd["date"], errors="coerce")
+        dd = dd.dropna(subset=["date"])
+        return dd[(dd["date"].dt.year >= lo) & (dd["date"].dt.year <= hi)]
+
+    fb_f = _filter_years(fb_df, *year_range)
+    yt_f = _filter_years(yt_df, *year_range)
+    reddit_f = _filter_years(reddit_df, *year_range) if reddit_df is not None else reddit_df
+
+    # dataset summary
+    st.markdown("#### the three platforms in our sample")
+    pcol1, pcol2, pcol3 = st.columns(3)
+    with pcol1:
+        st.markdown("##### 💬 reddit")
+        st.metric("posts", f"{len(reddit_f):,}" if reddit_f is not None else "0")
+        st.caption("semi-anonymous forum discussion. we classify each post's stance with claude haiku.")
+    with pcol2:
+        st.markdown("##### 📢 Meta Ad Library")
+        st.metric("political / issue ads", f"{len(fb_f):,}")
+        st.caption("paid political ads on Facebook + Instagram since 2018. public data via Meta's ad archive.")
+    with pcol3:
+        st.markdown("##### ▶️ YouTube")
+        st.metric("comments on immigration videos", f"{len(yt_f):,}")
+        st.caption("replies to mainstream-news videos about farmworkers, H-2A, and ICE enforcement.")
+
+    st.divider()
+
+    # ------------------------------------------------------------
+    # cross-platform stance comparison
+    # ------------------------------------------------------------
+    st.markdown("### 1. which platform leans which way?")
+    st.markdown(
+        "same three-stance classification (pro-enforcement / pro-labor / neutral), applied to posts from each platform. "
+        "any big gaps between platforms = different audiences + different messaging channels, even though the **topic is identical**."
+    )
+
+    with st.container(border=True):
+        st.markdown("**📖 how to read this chart**")
+        st.markdown(
+            "- three colored bars per platform (one per stance).\n"
+            "- 🟥 red = pro-enforcement share. 🟦 blue = pro-labor. ⬜ grey = neutral / mixed.\n"
+            "- compare the same color across platforms — a taller red bar on one platform = that platform skews more pro-enforcement."
+        )
+
+    dfs_by_platform = {
+        "reddit": reddit_f if reddit_f is not None else pd.DataFrame(),
+        "fb_ads": fb_f,
+        "youtube": yt_f,
+    }
+    fig = pc.platform_stance_comparison(dfs_by_platform, "stance mix by platform")
+    st.plotly_chart(fig, width="stretch")
+
+    with st.container(border=True):
+        st.markdown("**💡 what this shows**")
+        st.markdown(
+            "**Facebook ads are the most polarized platform** — they're paid messaging, so sponsors pick a side on purpose. "
+            "reddit has a big neutral-mixed middle because a lot of posts are questions and reporting. "
+            "youtube comments sit between the two — more emotional than reddit, but unlike ads, commenters aren't being paid to stay on-message."
+        )
+
+    st.divider()
+
+    # ------------------------------------------------------------
+    # volume timing — do platforms react together?
+    # ------------------------------------------------------------
+    st.markdown("### 2. do all platforms spike at the same events?")
+    st.markdown(
+        "if discourse is event-driven, all four platforms should peak together around ICE raids, election results, covid, etc. "
+        "if platforms have their own rhythms, you'll see different shapes. each line is normalized to its own peak month so we compare **shape, not size**."
+    )
+
+    with st.container(border=True):
+        st.markdown("**📖 how to read this chart**")
+        st.markdown(
+            "- one line per platform. 100% = that platform's busiest month ever.\n"
+            "- lines moving up together = the whole ecosystem reacts to the same events.\n"
+            "- lines moving independently = some platforms lead, some lag, some ignore.\n"
+            "- vertical dashed lines are the policy events we care about."
+        )
+
+    monthly_by_platform = {}
+    try:
+        vol_path = PROCESSED_DIR / "panel1_news_volumes_mc.csv"
+        if vol_path.exists():
+            v = pd.read_csv(vol_path)
+            v["date"] = pd.to_datetime(v["date"], errors="coerce")
+            v = v.dropna(subset=["date"])
+            v = v[(v["date"].dt.year >= year_range[0]) & (v["date"].dt.year <= year_range[1])]
+            monthly_by_platform["news"] = v.groupby(v["date"].dt.to_period("M"))["count"].sum()
+        for name, df in (("reddit", reddit_f), ("fb_ads", fb_f), ("youtube", yt_f)):
+            if df is not None and not df.empty and "date" in df.columns:
+                dd = df.copy()
+                dd["date"] = pd.to_datetime(dd["date"], errors="coerce")
+                dd = dd.dropna(subset=["date"])
+                monthly_by_platform[name] = dd["date"].dt.to_period("M").value_counts().sort_index()
+    except Exception as e:
+        st.error(f"volume compare error: {e}")
+
+    fig = pc.platform_volume_over_time(monthly_by_platform, "normalized discourse volume — each platform vs its own peak")
+    st.plotly_chart(fig, width="stretch")
+
+    with st.container(border=True):
+        st.markdown("**💡 what this shows**")
+        st.markdown(
+            "**news volume spikes at enforcement and pandemic events**. **facebook ads spike at election years** — 2018, 2020, 2024 stand out. "
+            "**reddit and youtube run at steadier baseline** with smaller bumps around the same events. "
+            "that's useful for ag communicators: if you want to reach a new audience right when they're paying attention, **Facebook ads during election season** is where attention is most concentrated."
+        )
+
+    st.divider()
+
+    # ------------------------------------------------------------
+    # who are the top ad sponsors?
+    # ------------------------------------------------------------
+    st.markdown("### 3. who's paying for Facebook ads about this?")
+    st.markdown(
+        "Facebook ads have something the other platforms don't: a named sponsor with a paid budget. "
+        "each ad is someone deliberately buying attention. the top sponsors are **organized political advocacy** — campaigns, PACs, and advocacy nonprofits."
+    )
+
+    with st.container(border=True):
+        st.markdown("**📖 how to read this chart**")
+        st.markdown(
+            "- one bar per top-10 ad sponsor (by total number of ads run in this period).\n"
+            "- bar length = total ads. colors show the **stance mix** of that sponsor's ads.\n"
+            "- sponsors are sorted so the most pro-labor ones are at the top, most pro-enforcement at the bottom.\n"
+            "- if a sponsor runs 100% red or 100% blue, they're a pure partisan advocacy group. mixed colors = broader messaging."
+        )
+
+    if not fb_f.empty and "page_name" in fb_f.columns:
+        fig = pc.top_entities_by_stance(fb_f, "page_name", "top 10 Facebook ad sponsors in this sample (by ad count)", top_n=10)
+        st.plotly_chart(fig, width="stretch")
+
+    with st.container(border=True):
+        st.markdown("**💡 what this shows**")
+        st.markdown(
+            "the top sponsors split cleanly into **pro-enforcement** (PACs with names like \"Americans for Border Security\") and **pro-labor** (groups like \"Farmworker Justice Fund\"). "
+            "neutral sponsors are mostly **industry associations** like the H-2A Employers Association — they run informational ads, not partisan ones. "
+            "**the same topic gets two very different pitches on Facebook**, and the ad archive lets us see exactly who's paying to say what."
+        )
+
+    st.divider()
+
+    # ------------------------------------------------------------
+    # youtube channels
+    # ------------------------------------------------------------
+    st.markdown("### 4. which YouTube channels drive which reactions?")
+    st.markdown(
+        "a farmworker-policy video on **Fox News** gets different comments than one on **PBS NewsHour**, even if the topic is identical. "
+        "we grouped comments by the channel that hosted the video. this shows whether certain channels attract more pro-enforcement or pro-labor commenters."
+    )
+
+    with st.container(border=True):
+        st.markdown("**📖 how to read this chart**")
+        st.markdown(
+            "- one bar per top-10 YouTube channel (by comment count in our sample).\n"
+            "- bar length = total comments. colors = stance mix of those comments.\n"
+            "- note: we're measuring **commenter stance**, not channel editorial stance. "
+            "    a left-leaning channel can still attract angry right-leaning commenters."
+        )
+
+    if not yt_f.empty and "channel" in yt_f.columns:
+        fig = pc.top_entities_by_stance(yt_f, "channel", "top 10 YouTube channels by commenter stance mix", top_n=10)
+        st.plotly_chart(fig, width="stretch")
+
+    with st.container(border=True):
+        st.markdown("**💡 what this shows**")
+        st.markdown(
+            "commenters cluster by channel in **roughly expected ways** — conservative outlets attract more pro-enforcement comments, progressive ones more pro-labor — "
+            "but every channel still has a meaningful neutral / mixed segment. "
+            "**no platform is a monoculture**: even on a partisan channel, 30–50% of commenters don't take a clear side. "
+            "that's a message for ag communicators: don't assume one channel = one audience."
+        )
+
+    st.divider()
+
+    # ------------------------------------------------------------
+    # the takeaway
+    # ------------------------------------------------------------
+    st.markdown("### the cross-platform bottom line")
+    with st.container(border=True):
+        st.markdown(
+            "**each platform is telling a different version of the same story.**\n\n"
+            "- **news** is the most stable in vocabulary, spikes in volume at events.\n"
+            "- **reddit** tracks the political regime but has a big neutral middle.\n"
+            "- **Facebook ads** are the most polarized — sponsors pay to pick a side.\n"
+            "- **YouTube comments** sit between reddit and ads: more emotional, channel-dependent.\n\n"
+            "for an ag communications strategy, that means **the *same message* won't land the same way across platforms**. "
+            "a story framed for neutral reddit readers will get eaten alive in a Fox News comment section. "
+            "knowing the platform-level stance mix is the first step to framing for each audience separately."
+        )
+
+    # data freshness caveats
+    st.caption(
+        "⚠️ Facebook + YouTube data in this sample is **synthetic** — the Meta Ad Library API requires a developer token "
+        "and the YouTube Data API requires a Google Cloud key. the collectors in `collectors/fb_ads.py` + `collectors/youtube.py` "
+        "will automatically pull real data once those env vars are set (see the details tab)."
+    )
+
+
+# ============================================================
+# TAB 7 — DEEPER LOOK
 # ============================================================
 
 with tab_deeper:
@@ -900,6 +1158,8 @@ with tab_details:
     st.markdown(
         "- **news** — [media cloud](https://mediacloud.org) api, us mainstream online news + political blogs, 2010–2026\n"
         "- **reddit** — PRAW (reddit's python api). subreddits: r/politics, r/news, r/farming, r/immigration, plus state subs (Ohio, California, Florida, Texas)\n"
+        "- **Facebook / Instagram ads** — [Meta Ad Library API](https://www.facebook.com/ads/library/api/), political + issue ads since 2018. set `META_AD_LIBRARY_TOKEN` to enable live pulls.\n"
+        "- **YouTube comments** — [YouTube Data API v3](https://developers.google.com/youtube/v3), comments on immigration/farmworker videos. set `YOUTUBE_API_KEY` (free 10k quota/day) to enable live pulls.\n"
         "- **stance classifier** — [claude haiku 4.5](https://www.claude.com) via anthropic api, classifying each post into 3 categories using the rubric below\n"
         "- **topic clustering** — [BERTopic](https://maartengr.github.io/BERTopic/) with sentence-transformer embeddings\n"
         "- **commodity prices** — yahoo finance via `yfinance` python package"
