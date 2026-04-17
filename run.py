@@ -111,46 +111,112 @@ def _combined(live_stance: bool, live_topic: bool, limit: int | None):
 
 
 def _findings():
-    """write a short findings skeleton that summarizes which panels broke at which events."""
+    """auto-generate a draft findings.md with era-level stats from whatever data is loaded."""
     from panels.panel1_language import _normalize_to_share, load_news_volumes, load_reddit_volumes
     from panels.panel2_stance import aggregate_stance
+    from panels.panel3_topic import _prevalence_per_year, load_corpus
     from common import PROCESSED_DIR
     import pandas as pd
 
     out = OUTPUT_DIR / "findings.md"
-    lines = []
-    lines.append("# discourse shift findings - draft\n")
-    lines.append("one-page writeup, data-driven. fill in interpretation before submission.\n")
-    lines.append("## panel-level summary\n")
+    L = []
+    L.append("# discourse-shift findings\n")
+    L.append("auto-generated summary from `run.py`. numbers refresh on every run.\n\n")
 
+    # ERAS for comparison
+    eras = [
+        ("pre_trump",  "2010-01-01", "2016-10-31"),
+        ("trump_1",    "2016-11-01", "2020-02-29"),
+        ("covid",      "2020-03-01", "2021-01-19"),
+        ("biden",      "2021-01-20", "2024-11-04"),
+        ("trump_2",    "2024-11-05", "2026-06-30"),
+    ]
+
+    def era_mean(series, start, end):
+        if series.empty: return None
+        s = series.loc[start:end]
+        return float(s.mean()) if len(s) else None
+
+    # --- panel 1 news language ---
+    L.append("## panel 1 — news language (real media cloud data)\n\n")
     try:
-        news_share = _normalize_to_share(load_news_volumes())
-        if not news_share.empty:
-            # check whether right_loaded share jumped at the trump-2016 hinge
-            pre = news_share.loc[:"2016-10-31", "right_loaded"].mean()
-            post = news_share.loc["2016-11-01":"2020-02-29", "right_loaded"].mean()
-            lines.append(f"- panel 1 news: enforcement-framed share went from {pre:.2f} (2010-Q4 to 2016-Q3) to {post:.2f} (Trump-1 era). delta {post-pre:+.2f}.\n")
+        news = _normalize_to_share(load_news_volumes())
+        if not news.empty:
+            L.append("| era | enforcement-framed | labor-framed | neutral |\n")
+            L.append("|---|---|---|---|\n")
+            for name, start, end in eras:
+                r = era_mean(news.get("right_loaded"), start, end)
+                l_ = era_mean(news.get("left_loaded"), start, end)
+                n = era_mean(news.get("neutral"), start, end)
+                fmt = lambda v: f"{v:.1%}" if v is not None else "—"
+                L.append(f"| {name} | {fmt(r)} | {fmt(l_)} | {fmt(n)} |\n")
+            # biggest shift
+            right = [(n, era_mean(news.get("right_loaded"), s, e)) for n, s, e in eras]
+            right = [(n, v) for n, v in right if v is not None]
+            if len(right) >= 2:
+                maxp = max(right, key=lambda x: x[1])
+                minp = min(right, key=lambda x: x[1])
+                L.append(f"\n- enforcement-framing **max** era = `{maxp[0]}` ({maxp[1]:.1%}), **min** era = `{minp[0]}` ({minp[1]:.1%})\n")
+                L.append(f"- headline takeaway: mainstream news framing of migrant farm labor has been {'remarkably stable' if (maxp[1] - minp[1]) < 0.1 else 'clearly era-dependent'} — enforcement-framing range is {(maxp[1] - minp[1]) * 100:.1f} percentage points across the 5 eras.\n")
     except Exception as e:
-        lines.append(f"- panel 1 news: could not summarize ({e})\n")
+        L.append(f"- could not summarize news panel: {e}\n")
 
+    # --- panel 2 stance ---
+    L.append("\n## panel 2 — reddit stance (live haiku classification)\n\n")
     try:
-        import pandas as pd
         df = pd.read_csv(PROCESSED_DIR / "reddit_posts_stance.csv")
         share = aggregate_stance(df)
-        pre = share.loc[:"2020-02-29", "pro_enforcement"].mean() if not share.empty else 0
-        covid = share.loc["2020-03-01":"2021-01-19", "pro_enforcement"].mean() if not share.empty else 0
-        lines.append(f"- panel 2 stance: pro-enforcement share averaged {pre:.2f} pre-pandemic vs {covid:.2f} during COVID. delta {covid-pre:+.2f}.\n")
+        L.append(f"- corpus: {len(df):,} posts, {df['stance'].notna().sum():,} with haiku label\n")
+        if not share.empty:
+            L.append("\n| era | pro-enforcement | pro-labor | neutral-mixed |\n")
+            L.append("|---|---|---|---|\n")
+            for name, start, end in eras:
+                e = era_mean(share.get("pro_enforcement"), start, end)
+                p = era_mean(share.get("pro_immigrant_labor"), start, end)
+                nm = era_mean(share.get("neutral_mixed"), start, end)
+                fmt = lambda v: f"{v:.1%}" if v is not None else "—"
+                L.append(f"| {name} | {fmt(e)} | {fmt(p)} | {fmt(nm)} |\n")
     except Exception as e:
-        lines.append(f"- panel 2 stance: could not summarize ({e})\n")
+        L.append(f"- could not summarize stance panel: {e}\n")
 
-    lines.append("- panel 3 topic: see heatmap - check for deportation/essential-worker cell intensity at the 2020 and 2024-25 columns.\n\n")
+    # --- panel 3 topic ---
+    L.append("\n## panel 3 — topic prevalence\n\n")
+    try:
+        corpus = load_corpus()
+        if not corpus.empty and "true_topic" in corpus.columns:
+            share = _prevalence_per_year(corpus, "true_topic")
+            if not share.empty:
+                for topic in share.index:
+                    s = share.loc[topic]
+                    peak_year = s.idxmax()
+                    peak_val = s.max()
+                    L.append(f"- **{topic}** peaked in {peak_year} at {peak_val:.1%} of that year's discourse\n")
+    except Exception as e:
+        L.append(f"- could not summarize topic panel: {e}\n")
 
-    lines.append("## interpretation outcomes (pick one, write paragraph):\n")
-    lines.append("- [ ] all three panels break at same events -> discourse is regime-driven\n")
-    lines.append("- [ ] language + topic break, stance stable -> same positions in new words\n")
-    lines.append("- [ ] stance breaks but lang/topic don't -> public positions move with events even when media frames same\n")
-    lines.append("- [ ] nothing breaks cleanly -> continuous discourse, events trigger volume not structure\n")
-    out.write_text("".join(lines))
+    # --- panel 4 futures ---
+    L.append("\n## panel 4 (bonus) — ag futures event windows\n\n")
+    try:
+        from panels.panel4_futures import event_window_returns
+        ew = event_window_returns(window_days=30)
+        if not ew.empty:
+            # pick out extreme post-minus-pre moves
+            ew_sorted = ew.reindex(ew["post_minus_pre"].abs().sort_values(ascending=False).index).head(5)
+            L.append("biggest 30-day post-vs-pre return shifts across all events × tickers:\n\n")
+            for _, row in ew_sorted.iterrows():
+                L.append(f"- **{row['event']}** ({row['date']}) → {row['ticker']}: {row['post_minus_pre']:+.1%}\n")
+    except Exception as e:
+        L.append(f"- futures summary skipped: {e}\n")
+
+    # --- interpretation bucket ---
+    L.append("\n## interpretation (pick the pattern that fits, write a paragraph)\n")
+    L.append("- [ ] **all three panels break at same events** → regime-driven discourse. strongest finding.\n")
+    L.append("- [ ] **language + topic break, stance stable** → identity-level positions are sticky, surface framing is reactive.\n")
+    L.append("- [ ] **stance breaks, lang + topic stable** → actual positions move with events even when media frames them the same. rare.\n")
+    L.append("- [ ] **nothing breaks cleanly** → continuous discourse, events trigger volume not structural shifts.\n")
+    L.append("\n---\n_generated by `run.py`. edit this file — next run will overwrite, so save final writeup elsewhere before submitting._\n")
+
+    out.write_text("".join(L))
     return out
 
 

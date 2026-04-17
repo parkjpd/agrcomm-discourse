@@ -64,7 +64,14 @@ def render(output: Path | None = None, live_stance: bool = False, live_topic: bo
     lang_note = "source: " + ", ".join(sorted(set(p1.load_news_volumes().get("source", pd.Series(["none"])).unique().tolist())))
 
     # ---- figure ----
-    fig, axes = plt.subplots(3, 1, figsize=(16, 14), sharex=True, gridspec_kw={"height_ratios": [1, 1, 1.3], "hspace": 0.28})
+    plt.rcParams.update({
+        "font.size": 10,
+        "axes.titlesize": 12,
+        "axes.labelsize": 10,
+        "xtick.labelsize": 9,
+        "ytick.labelsize": 9,
+    })
+    fig, axes = plt.subplots(3, 1, figsize=(18, 15), sharex=True, gridspec_kw={"height_ratios": [1, 1, 1.35], "hspace": 0.32})
 
     # top: language (shows event labels)
     p1._plot_stacked(axes[0], news_share, "panel 1 — language share (news)", show_event_labels=True)
@@ -80,10 +87,12 @@ def render(output: Path | None = None, live_stance: bool = False, live_topic: bo
         ax.set_xlim(X_MIN, X_MAX)
 
     fig.suptitle(
-        "public discourse on migrant farm labor, 2010-2026 — language / stance / topic",
-        fontsize=13,
+        "public discourse on migrant farm labor, 2010–2026",
+        fontsize=15,
+        fontweight="bold",
         y=0.995,
     )
+    fig.text(0.5, 0.975, "language / stance / topic — shared event overlay", ha="center", fontsize=10, color="#555", style="italic")
     # event category legend in the bottom-right corner
     from matplotlib.lines import Line2D
     from viz.event_overlay import CATEGORY_STYLES
