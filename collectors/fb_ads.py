@@ -151,7 +151,7 @@ def pull(demo: bool = False) -> pd.DataFrame:
 
 
 def render_processed(output: Path | None = None) -> Path:
-    """write collected ads to processed/. mirrors the reddit collector pattern."""
+    """write collected ads to processed/. same shape as the reddit collector."""
     output = output or (PROCESSED_DIR / "fb_ads.csv")
     df = pull(demo=not available())
     PROCESSED_DIR.mkdir(parents=True, exist_ok=True)

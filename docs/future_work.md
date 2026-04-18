@@ -1,54 +1,37 @@
 # future work
 
-ideas captured during the initial build that are worth circling back to.
+stuff we thought about but didn't have time to build out in the 8-hour budget.
 
-## panel 4 (extension) — discourse vs ag futures markets
+## panel 4 (ag futures) — make it real
 
-hypothesis: spikes in enforcement-framed discourse (panel 1 right_loaded share, or panel 2 pro_enforcement share) precede or coincide with moves in agricultural commodity futures tied to labor-intensive crops. if enforcement rhetoric is predictive of crop-loss pricing, that's a meaningful economic signal.
+the current version is bonus / experimental. it works but there are only 8 policy events × 5 tickers, which is not enough to make causal claims. what we'd need to tighten it:
 
-### candidate commodities
+- daily news + reddit stance index instead of quarterly
+- rolling correlations between enforcement framing and returns, not just pre/post event windows
+- weather / citrus greening / avian flu as control variables (FCOJ is very sensitive to florida freezes)
+- granger causality test on whether discourse leads prices or the other way
+- out-of-sample backtest on 2024-2026 after training on 2010-2023
 
-labor-intensive crops most exposed to migrant-labor enforcement risk:
-- **fresh produce / specialty crops** — lettuce, strawberries, tomatoes, citrus. no liquid futures market, use proxies.
-- **dairy** — class III milk futures (CME), dairy labor heavy.
-- **sugar** — sugar #11 (ICE).
-- **cattle** — live cattle / feeder cattle (CME). some labor exposure.
-- **cotton** — less manual but tracked.
-- **orange juice** — FCOJ (ICE). florida citrus is H-2A heavy.
-- **wheat / corn / soybeans** — probably low signal; mostly mechanized.
+this probably becomes a senior-thesis-sized project rather than a class case study.
 
-the cleanest signal will probably be in FCOJ and class III milk since those two tie directly to high-migrant-labor crops with liquid futures.
+### candidate commodities if we extend
 
-### data source
+labor-intensive crops where enforcement risk would matter most:
 
-- yahoo finance (`yfinance` python package) — free, daily OHLCV for most futures tickers
-- FRED — for agricultural price indices
-- alternatives: quandl / nasdaq-data, tradingview api, CBOT / CME direct
+- fresh produce (lettuce, strawberries, tomatoes, citrus) — no liquid futures though, would need USDA AMS spot prices
+- dairy — class III milk futures (CME), dairy labor heavy
+- sugar — sugar #11 (ICE)
+- cattle — live + feeder cattle (CME), some labor exposure
+- orange juice — FCOJ (ICE), already in the current panel
+- cotton — some labor but mostly mechanized now
+- wheat / corn / soy — skip, fully mechanized
 
-### analysis
+cleanest signal will probably stay in FCOJ and class III milk.
 
-- align daily / weekly futures prices with the quarterly discourse series from panels 1-3
-- compute rolling correlation between enforcement-framed share and price returns
-- event study: what happens to FCOJ prices in the 10 trading days after a policy-event date (jan 2017 travel ban, march 2020 essential-worker designation, jan 2025 mass deportation)
-- granger causality test: does discourse lead prices, or vice versa
+## other things worth building
 
-### build estimate
-
-~2-3 hours.
-- collector: `collectors/futures.py` pulling yfinance close prices for 5-6 tickers (~30 min)
-- `panels/panel4_futures.py` — overlay price chart on panel 1 timeline with 2nd y-axis (~60 min)
-- event study analysis script (~60 min)
-- writeup paragraph in findings.md (~30 min)
-
-### caveats
-
-- fresh produce has no futures market, so for lettuce / strawberries / tomatoes we'd need spot price data from USDA AMS (agricultural marketing service) — free but messier
-- causality is hard. strong correlation just means "the same events drive both." panel findings already cover that qualitatively.
-- 2026 futures data will be sparse since we're mid-year
-
-## other ideas
-
-- **social media comments, not just posts**: reddit comments per submission can be scraped via PRAW and give a finer-grained view of stance than posts alone. the volume is 10-20x higher than posts but dedicated comment scraping needs its own rate budget.
-- **spanish-language press**: la opinión, univision, telemundo news are relevant and underrepresented in MC's english-only default collections. MC has spanish collections available — worth adding as a panel 1b.
-- **state-level breakdown**: california / florida / texas / ohio all have different migrant-labor dynamics. the reddit subs are already split, but for news we could split MC results by source-location metadata.
-- **time-lag analysis**: does news lead reddit or vice versa? lagged cross-correlation between news.language_share and reddit.language_share at the weekly level.
+- **Reddit comments, not just posts.** Comments are 10-20x higher volume than submissions and give finer-grained stance per topic. Needs its own PRAW rate budget though.
+- **Spanish-language press.** La Opinión, Univision, Telemundo are directly relevant and not in Media Cloud's default english collections. MC has spanish collections — worth a panel 1b.
+- **State-level breakdown.** California, Florida, Texas, Ohio all have different migrant labor dynamics. Our reddit subs are already split by state, but we could also split news by source metadata.
+- **Time-lag analysis.** Does news lead Reddit, or does Reddit lead news? Lagged cross-correlation between panel 1 language share and panel 2 stance share at the weekly level would tell us which platform is the leading indicator.
+- **Validation on the new platforms.** Cohen's kappa check for the stance classifier on FB ads and YouTube comments, separate from reddit, since the text styles are very different.

@@ -1,9 +1,9 @@
 """
-plotly chart builders for the streamlit dashboard. return plotly figures so the
-streamlit app can display them interactively.
+plotly chart builders for the streamlit dashboard. every function returns a
+plotly Figure so the app can drop it straight into st.plotly_chart().
 
-parallels the matplotlib builders in panels/*.py but uses plotly so hover, zoom,
-pan, and event-tooltip interactions work out of the box.
+same color palette + event overlay as the matplotlib versions in panels/*.py,
+just using plotly so hover / zoom / pan are free.
 """
 from __future__ import annotations
 

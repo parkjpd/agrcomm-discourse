@@ -340,7 +340,7 @@ def generate_fb_ads(
     rows = []
     year = start.year
     while year <= end.year:
-        # election years get more ads (mirrors real ad-library volume pattern)
+        # election years get more ads (closer to what the real ad library shows)
         multiplier = 2.2 if year in (2018, 2020, 2022, 2024, 2026) else 1.0
         n = int(per_year * multiplier)
         for _ in range(n):
