@@ -23,22 +23,42 @@ from common import OUTPUT_DIR, PROCESSED_DIR
 from panels.panel1_language import _normalize_to_share, load_news_volumes
 from viz.event_overlay import draw as draw_events
 
-LABOR_HEAVY = ["FCOJ", "milk_class_iii", "sugar_11"]
-BASELINE = ["corn_baseline"]
+LABOR_HEAVY = ["FCOJ", "milk_class_iii", "sugar_11", "coffee"]
+MODERATE = ["live_cattle", "cotton"]
+BASELINE = ["soybeans", "corn_baseline"]
 
 TICKER_COLORS = {
     "FCOJ":           "#e76f51",
     "milk_class_iii": "#2a9d8f",
     "sugar_11":       "#e9c46a",
+    "coffee":         "#6f4e37",
+    "cotton":         "#cbd5e8",
     "live_cattle":    "#8b5a2b",
+    "soybeans":       "#aaaaaa",
     "corn_baseline":  "#888888",
 }
 TICKER_DISPLAY = {
     "FCOJ":           "FCOJ (orange juice)",
     "milk_class_iii": "class III milk",
     "sugar_11":       "sugar #11",
+    "coffee":         "coffee",
+    "cotton":         "cotton",
     "live_cattle":    "live cattle",
+    "soybeans":       "soybeans (baseline)",
     "corn_baseline":  "corn (baseline)",
+}
+
+# labor-exposure score 0-1: used for sorting + ranking charts.
+# rough heuristic: 1 = almost all hand-picked / H-2A, 0 = fully mechanized.
+LABOR_EXPOSURE = {
+    "FCOJ":           0.95,  # florida citrus, H-2A heavy
+    "coffee":         0.90,  # almost entirely hand-picked globally
+    "sugar_11":       0.75,  # some mechanized but labor-heavy harvest crews
+    "milk_class_iii": 0.70,  # dairy workers heavily immigrant
+    "cotton":         0.35,  # mostly mechanized now, some hand labor
+    "live_cattle":    0.30,  # moderate labor in feedlots + ranches
+    "soybeans":       0.05,  # fully mechanized
+    "corn_baseline":  0.05,  # fully mechanized
 }
 
 
@@ -137,7 +157,7 @@ def correlation_table() -> pd.DataFrame:
 
 
 def TICKERS_ALL():
-    return LABOR_HEAVY + ["live_cattle"] + BASELINE
+    return LABOR_HEAVY + MODERATE + BASELINE
 
 
 def plot_overlay(output: Path | None = None) -> Path:

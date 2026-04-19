@@ -8,8 +8,11 @@ tickers picked for migrant-labor exposure:
 - OJ=F   frozen concentrated orange juice (florida citrus, H-2A heavy)
 - DC=F   class III milk (dairy labor heavy)
 - SB=F   sugar #11 (louisiana / florida sugar cane, migrant crew labor)
+- KC=F   coffee (high labor, mostly central/south america but US imports)
+- CT=F   cotton (some hand labor, increasingly mechanized)
 - LE=F   live cattle (moderate labor exposure)
-- ZC=F   corn (low labor, mechanized - included as baseline, should NOT correlate much)
+- ZS=F   soybeans (low labor, mechanized - baseline)
+- ZC=F   corn (low labor, mechanized - baseline)
 """
 from __future__ import annotations
 
@@ -26,7 +29,10 @@ TICKERS = {
     "FCOJ":            "OJ=F",   # frozen concentrated orange juice
     "milk_class_iii":  "DC=F",   # class III milk
     "sugar_11":        "SB=F",   # sugar no. 11
+    "coffee":          "KC=F",   # coffee (high labor, mostly imported)
+    "cotton":          "CT=F",   # cotton (some hand labor)
     "live_cattle":     "LE=F",   # live cattle
+    "soybeans":        "ZS=F",   # soybeans (baseline, low labor)
     "corn_baseline":   "ZC=F",   # corn (baseline, low labor exposure)
 }
 
