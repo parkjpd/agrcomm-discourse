@@ -64,11 +64,42 @@ def export_event_waterfall() -> Path:
     return _png(fig, OUTPUT_DIR / "assignment_event_waterfall.png", width=1400, height=720)
 
 
+def export_fcoj_deep_dive() -> Path:
+    from collectors import futures as fut_col
+    from common import load_events
+    from panels.panel4_futures import daily_enforcement_share
+    fcoj_daily = fut_col.pull_all().get("FCOJ", pd.DataFrame())
+    enf_daily = daily_enforcement_share()
+    fig = pc.fcoj_deep_dive(fcoj_daily, enf_daily, load_events(), "FCOJ (orange juice) vs US news enforcement framing, 2010-2026")
+    fig.add_annotation(
+        xref="paper", yref="paper", x=0.0, y=1.10, showarrow=False, xanchor="left",
+        text="FCOJ dropped 35% in 30 days after Jan 2025 mass deportation ops. Florida citrus is ~95% migrant labor.",
+        font=dict(size=11, color="#333"),
+    )
+    fig.update_layout(margin=dict(t=110, b=40, l=60, r=60))
+    return _png(fig, OUTPUT_DIR / "assignment_fcoj_deep_dive.png", width=1400, height=560)
+
+
+def export_sensitivity_scatter() -> Path:
+    from panels.panel4_futures import discourse_sensitivity
+    sens = discourse_sensitivity()
+    fig = pc.discourse_sensitivity_scatter(sens, "Labor-heavy US commodities correlate negatively with enforcement rhetoric")
+    fig.add_annotation(
+        xref="paper", yref="paper", x=0.0, y=1.08, showarrow=False, xanchor="left",
+        text="US labor-heavy crops: negative correlation. Mechanized: near zero. Coffee (foreign labor): near zero — exactly as predicted.",
+        font=dict(size=11, color="#333"),
+    )
+    fig.update_layout(margin=dict(t=100, b=60, l=60, r=40))
+    return _png(fig, OUTPUT_DIR / "assignment_sensitivity_scatter.png", width=1200, height=600)
+
+
 def main():
     paths = [
         export_reddit_opinions(),
         export_platform_comparison(),
         export_event_waterfall(),
+        export_fcoj_deep_dive(),
+        export_sensitivity_scatter(),
     ]
     print("wrote:")
     for p in paths:
