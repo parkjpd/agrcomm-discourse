@@ -1,14 +1,23 @@
-import { useEffect } from "react";
-import { PieChart, Pie, Cell, ResponsiveContainer, Legend } from "recharts";
+import { useEffect, useState } from "react";
+import { PieChart, Pie, Cell, ResponsiveContainer, Legend, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip } from "recharts";
 
 // ============================================================
 // POSTER CONTENT
 // ============================================================
 
-const TITLE_LINE_1 = "The food gets picked.";
-const TITLE_LINE_2 = "The people who picked it go hungry.";
-const SUBTITLE = "How migrant workers in U.S. produce farming shape the food on your table, the policy that moves around them, and the cost that lands on working-class households on both sides of the counter.";
+const TITLE_LINE_1 = "Almost half the people feeding America";
+const TITLE_LINE_2 = "could be deported tomorrow.";
+const SUBTITLE = "How do migrant workers in the U.S. produce farming industry influence economic trends, shape immigration policy, and produce diverse perspectives on the role of immigrant labor in American agriculture?";
 const AUTHORS = ["David Park", "Ella Russell", "Sydney Beiting"];
+
+// Reddit stance by political era (project scrape, 3,000 posts, Haiku classification)
+const STANCE_BY_ERA = [
+  { era: "Pre-Trump",  proEnforce: 17.9, proLabor: 14.5, neutral: 67.6 },
+  { era: "Trump I",    proEnforce: 27.2, proLabor: 9.0,  neutral: 63.8 },
+  { era: "COVID",      proEnforce: 15.6, proLabor: 15.3, neutral: 69.1 },
+  { era: "Biden",      proEnforce: 17.5, proLabor: 16.8, neutral: 65.7 },
+  { era: "Trump II",   proEnforce: 26.4, proLabor: 13.2, neutral: 60.5 },
+];
 
 const STATS = [
   { num: "40–50%", label: "of US farmworkers are undocumented", src: "USDA ERS" },
@@ -109,6 +118,27 @@ function SectionHeading({ children, kicker }) {
   );
 }
 
+function FigCaption({ num, title, source }) {
+  return (
+    <div style={{ ...mono, fontSize: 9, color: C.muted, letterSpacing: "0.04em", marginTop: 6, lineHeight: 1.35 }}>
+      <span style={{ color: C.terra, fontWeight: 500 }}>Fig. {num}</span> · {title}
+      {source && <span style={{ fontStyle: "italic" }}> · {source}</span>}
+    </div>
+  );
+}
+
+function ChartTooltip({ active, payload, label }) {
+  if (!active || !payload || !payload.length) return null;
+  return (
+    <div style={{ background: "#1f1f1f", color: "#f5efe3", padding: "8px 12px", fontSize: 11, fontFamily: mono.fontFamily, border: `1px solid ${C.terra}` }}>
+      <div style={{ color: C.terra, marginBottom: 4, fontWeight: 500 }}>{label}</div>
+      {payload.map((p, i) => (
+        <div key={i} style={{ color: p.color }}>{p.name}: <span style={{ color: "#f5efe3" }}>{p.value}%</span></div>
+      ))}
+    </div>
+  );
+}
+
 function Fig({ src, alt, num, title, source }) {
   return (
     <div style={{ background: C.panel, border: `1px solid ${C.rule}`, padding: 10, marginBottom: 12 }}>
@@ -117,10 +147,7 @@ function Fig({ src, alt, num, title, source }) {
         alt={alt}
         style={{ width: "100%", height: "auto", display: "block", objectFit: "contain" }}
       />
-      <div style={{ ...mono, fontSize: 9, color: C.muted, letterSpacing: "0.04em", marginTop: 6, lineHeight: 1.35 }}>
-        <span style={{ color: C.terra, fontWeight: 500 }}>Fig. {num}</span> · {title}
-        {source && <span style={{ fontStyle: "italic" }}> · {source}</span>}
-      </div>
+      <FigCaption num={num} title={title} source={source} />
     </div>
   );
 }
@@ -238,13 +265,31 @@ export default function App() {
               Pro-enforcement framing on social platforms jumped 10 points between Obama and Trump. Reddit pro-enforcement stance moved from 17.9% pre-Trump to 26–27% in both Trump terms. Terms like <b>"mass deportation"</b> grew from 3.6% to 9% of farm coverage. The story changed online before the policy did.
             </p>
 
-            <Fig
-              src="/figures/panel2_stance.png"
-              alt="Reddit stance over time"
-              num="1"
-              title="Reddit stance on migrant farm labor, 2015–2026"
-              source="project scrape · Haiku classification, n=3,000"
-            />
+            <div style={{ background: C.panel, border: `1px solid ${C.rule}`, padding: 12, marginBottom: 12 }}>
+              <div style={{ ...serif, fontSize: 13, fontWeight: 600, color: C.navy, marginBottom: 2 }}>
+                Pro-enforcement stance doubled under both Trump terms.
+              </div>
+              <div style={{ fontSize: 10.5, color: C.muted, marginBottom: 8, lineHeight: 1.4 }}>
+                Reddit posts about migrant farm labor, grouped by political era. Hover any bar for the exact share.
+              </div>
+              <div style={{ height: 220 }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={STANCE_BY_ERA} margin={{ top: 8, right: 12, left: -14, bottom: 4 }} barCategoryGap="18%">
+                    <CartesianGrid strokeDasharray="2 2" stroke={C.rule} vertical={false}/>
+                    <XAxis dataKey="era" stroke={C.muted} tick={{ fontSize: 10, fontFamily: mono.fontFamily }} axisLine={{ stroke: C.rule }} tickLine={false}/>
+                    <YAxis stroke={C.muted} tick={{ fontSize: 9, fontFamily: mono.fontFamily }} axisLine={false} tickLine={false} tickFormatter={(v) => `${v}%`} domain={[0, 35]}/>
+                    <Tooltip content={<ChartTooltip/>} cursor={{ fill: "rgba(15,37,64,0.05)" }}/>
+                    <Bar dataKey="proEnforce" name="Pro-enforcement" fill={C.terra} radius={[2,2,0,0]}/>
+                    <Bar dataKey="proLabor"   name="Pro-labor"       fill={C.navy2} radius={[2,2,0,0]}/>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+              <FigCaption
+                num="1"
+                title="Reddit stance on migrant farm labor, by political era"
+                source="project scrape · Claude Haiku classification, n=3,000 posts"
+              />
+            </div>
 
             <p style={{ fontSize: 11.5, lineHeight: 1.55, color: C.ink, margin: "14px 0 10px" }}>
               Markets moved too. Orange juice futures dropped 35% that same winter — most of that was Brazilian supply recovery, not U.S. enforcement. But that's the point: <b>hedge funds can price in a coming shock. A family at the grocery store can't.</b> When produce prices climbed after the raids, working-class households ate the cost. When family farms lost harvests, no one covered the loss.
@@ -379,10 +424,35 @@ export default function App() {
 // ============================================================
 
 function OsuBlockO() {
+  // Block O approximation: scarlet rounded-rectangle ring with an "O" hole cut out via evenodd fill.
   return (
-    <svg width="50" height="40" viewBox="0 0 100 80" xmlns="http://www.w3.org/2000/svg" aria-label="OSU Block O">
-      <rect x="2" y="14" width="96" height="52" rx="6" fill="#bb0000"/>
-      <rect x="18" y="26" width="64" height="28" rx="3" fill="#ffffff"/>
+    <svg width="56" height="44" viewBox="0 0 112 88" xmlns="http://www.w3.org/2000/svg" aria-label="OSU Block O">
+      <path
+        fill="#bb0000"
+        fillRule="evenodd"
+        d="
+          M 10 8
+          h 92
+          a 8 8 0 0 1 8 8
+          v 56
+          a 8 8 0 0 1 -8 8
+          h -92
+          a 8 8 0 0 1 -8 -8
+          v -56
+          a 8 8 0 0 1 8 -8
+          z
+          M 32 28
+          h 48
+          a 6 6 0 0 1 6 6
+          v 20
+          a 6 6 0 0 1 -6 6
+          h -48
+          a 6 6 0 0 1 -6 -6
+          v -20
+          a 6 6 0 0 1 6 -6
+          z
+        "
+      />
     </svg>
   );
 }
