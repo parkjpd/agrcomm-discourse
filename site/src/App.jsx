@@ -414,7 +414,7 @@ export default function App() {
         {/* ============ FOOTER / LOGO ============ */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "14px 40px", background: "#fff" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-            <img src="/osu-logo.png" alt="The Ohio State University" style={{ height: 76, width: "auto", display: "block" }} />
+            <img src="/osu-logo.png" alt="The Ohio State University" style={{ height: 52, width: "auto", display: "block" }} />
             <div style={{ fontSize: 11, color: C.muted, lineHeight: 1.4, borderLeft: `1px solid ${C.rule}`, paddingLeft: 14 }}>
               College of Food, Agricultural,<br/>and Environmental Sciences
             </div>
