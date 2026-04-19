@@ -76,8 +76,8 @@ def export_fcoj_deep_dive() -> Path:
         text="FCOJ dropped 35% in 30 days after Jan 2025 mass deportation ops. Florida citrus is ~95% migrant labor.",
         font=dict(size=11, color="#333"),
     )
-    fig.update_layout(margin=dict(t=110, b=40, l=60, r=60))
-    return _png(fig, OUTPUT_DIR / "assignment_fcoj_deep_dive.png", width=1400, height=560)
+    fig.update_layout(margin=dict(t=130, b=40, l=60, r=60))
+    return _png(fig, OUTPUT_DIR / "assignment_fcoj_deep_dive.png", width=1400, height=580)
 
 
 def export_sensitivity_scatter() -> Path:

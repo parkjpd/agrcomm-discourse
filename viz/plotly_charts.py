@@ -882,25 +882,40 @@ def fcoj_deep_dive(fcoj_daily: pd.DataFrame, enf_daily: pd.Series, events: list,
             hovertemplate="%{x|%Y-%m-%d} — enforcement framing: %{y:.1f}%<extra></extra>",
         ))
 
-    # overlay event markers
+    # overlay event markers (other events dimmed so jan 2025 pops)
+    jan25 = datetime(2025, 1, 20)
     for ev in events:
         d = datetime.strptime(str(ev["date"])[:10], "%Y-%m-%d")
+        if d == jan25:
+            continue  # drawn separately below with heavy emphasis
         cat = ev.get("category", "policy")
         fig.add_vline(
             x=d, line_color=CATEGORY_COLORS.get(cat, "#555"),
-            line_width=1.2 if cat == "election" else 1.0,
+            line_width=1.0,
             line_dash=CATEGORY_DASH.get(cat, "dash"),
-            opacity=0.7,
+            opacity=0.3,
         )
 
-    # explicit callout on jan 2025
-    jan25 = datetime(2025, 1, 20)
+    # jan 2025 gets a fat scarlet band + solid vline so the eye lands there first
+    fig.add_vrect(
+        x0=datetime(2025, 1, 10), x1=datetime(2025, 2, 20),
+        fillcolor="#c23b22", opacity=0.14, line_width=0, layer="below",
+    )
+    fig.add_vline(
+        x=jan25, line_color="#bb0000", line_width=3, opacity=0.9,
+    )
+
+    # big, unmissable callout in scarlet fill with white bold text
     fig.add_annotation(
-        x=jan25, y=1.0, yref="paper",
-        text="Jan 2025 mass deportation ops begin",
-        showarrow=True, arrowhead=2, ax=-60, ay=-30,
-        font=dict(size=11, color="#c23b22"), bgcolor="rgba(255,240,230,0.9)",
-        bordercolor="#c23b22", borderwidth=1,
+        x=jan25, y=1.02, yref="paper",
+        text="<b>Jan 2025 — mass deportation ops begin</b><br>FCOJ -35% in 30 days",
+        showarrow=True, arrowhead=3, arrowsize=1.4, arrowwidth=2.5,
+        arrowcolor="#bb0000",
+        ax=-140, ay=-55,
+        align="center",
+        font=dict(size=15, color="#ffffff", family="DM Sans, Helvetica, sans-serif"),
+        bgcolor="#bb0000", bordercolor="#7a0000", borderwidth=2,
+        borderpad=8,
     )
 
     fig.update_layout(
