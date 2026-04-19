@@ -125,6 +125,118 @@ def event_window_returns(window_days: int = 30) -> pd.DataFrame:
     return pd.DataFrame(rows)
 
 
+def daily_enforcement_share(method: str = "ffill") -> pd.Series:
+    """expand quarterly news enforcement share into a daily series so we can
+    correlate with daily futures returns. forward-fills each quarter to
+    every trading day."""
+    share = _enforcement_share_quarterly()
+    if share.empty:
+        return share
+    share.index = pd.to_datetime(share.index)
+    # pad to daily by reindexing onto a business-day range and forward filling
+    daily_idx = pd.date_range(share.index.min(), share.index.max() + pd.offsets.QuarterEnd(1), freq="B")
+    daily = share.reindex(daily_idx).ffill().bfill()
+    return daily
+
+
+def discourse_sensitivity() -> pd.DataFrame:
+    """for every ticker, compute correlation between the 60-day rolling
+    enforcement-framing share and the 60-day forward return. this gives a
+    cleaner "sensitivity" score than raw correlation of quarterly levels."""
+    from collectors import futures as fut_col
+
+    enf_daily = daily_enforcement_share()
+    if enf_daily.empty:
+        return pd.DataFrame()
+
+    rows = []
+    daily_by_ticker = fut_col.pull_all()
+    for ticker, df in daily_by_ticker.items():
+        if df is None or df.empty:
+            continue
+        d = df.copy()
+        d["date"] = pd.to_datetime(d["date"])
+        d = d.sort_values("date").set_index("date")
+        # forward 60-trading-day log return
+        fwd_ret = (d["close"].pct_change(60).shift(-60)).dropna()
+        common = enf_daily.index.intersection(fwd_ret.index)
+        if len(common) < 200:
+            continue
+        a = enf_daily.loc[common]
+        b = fwd_ret.loc[common]
+        corr_p = float(a.corr(b, method="pearson"))
+        corr_s = float(a.corr(b, method="spearman"))
+        # regression beta: how much does 60d fwd return change per 1pp increase in enf share
+        var = float(a.var())
+        cov = float(((a - a.mean()) * (b - b.mean())).mean())
+        beta = cov / var if var > 0 else 0.0
+        rows.append({
+            "ticker": ticker,
+            "labor_exposure": LABOR_EXPOSURE.get(ticker, 0),
+            "n_obs": int(len(common)),
+            "corr_pearson":  corr_p,
+            "corr_spearman": corr_s,
+            "beta_per_pp":   float(beta) / 100.0,  # convert to "per pp" scale
+        })
+    return pd.DataFrame(rows).sort_values("labor_exposure", ascending=False)
+
+
+def regime_cumulative_returns() -> pd.DataFrame:
+    """split the sample into 'high enforcement framing' and 'low enforcement
+    framing' quarters (above / below median) and compute geometric mean return
+    for each ticker in each regime. shows whether labor-heavy commodities
+    underperform when enforcement rhetoric is loud."""
+    from collectors import futures as fut_col
+
+    enf_q = _enforcement_share_quarterly()
+    if enf_q.empty:
+        return pd.DataFrame()
+    median = enf_q.median()
+
+    daily_by_ticker = fut_col.pull_all()
+    rows = []
+    for ticker, df in daily_by_ticker.items():
+        if df is None or df.empty:
+            continue
+        d = df.copy()
+        d["date"] = pd.to_datetime(d["date"])
+        d = d.sort_values("date").set_index("date")
+        # quarterly returns
+        q_close = d["close"].resample("QS").mean()
+        q_ret = q_close.pct_change().dropna()
+        common = enf_q.index.intersection(q_ret.index)
+        if len(common) < 10:
+            continue
+        e = enf_q.loc[common]
+        r = q_ret.loc[common]
+        hi_ret = r[e >= median]
+        lo_ret = r[e < median]
+        # annualized geometric mean return (4 quarters)
+        hi_ann = ((1 + hi_ret).prod()) ** (4 / max(len(hi_ret), 1)) - 1 if len(hi_ret) else 0
+        lo_ann = ((1 + lo_ret).prod()) ** (4 / max(len(lo_ret), 1)) - 1 if len(lo_ret) else 0
+        rows.append({
+            "ticker": ticker,
+            "labor_exposure": LABOR_EXPOSURE.get(ticker, 0),
+            "annualized_return_high_enf":  float(hi_ann),
+            "annualized_return_low_enf":   float(lo_ann),
+            "spread_high_minus_low":       float(hi_ann - lo_ann),
+            "n_hi_quarters": int(len(hi_ret)),
+            "n_lo_quarters": int(len(lo_ret)),
+        })
+    return pd.DataFrame(rows).sort_values("labor_exposure", ascending=False)
+
+
+def event_impact_detail(window_days: int = 30) -> pd.DataFrame:
+    """richer version of event_window_returns: adds labor exposure + direction + rank."""
+    df = event_window_returns(window_days=window_days)
+    if df.empty:
+        return df
+    df["labor_exposure"] = df["ticker"].map(LABOR_EXPOSURE)
+    df["abs_delta"] = df["post_minus_pre"].abs()
+    df = df.sort_values(["event", "abs_delta"], ascending=[True, False])
+    return df
+
+
 def correlation_table() -> pd.DataFrame:
     """correlation between enforcement-framed share and each ticker's quarterly returns."""
     fut = load_futures_quarterly()
