@@ -1,0 +1,52 @@
+[
+  {
+    "year": "'16",
+    "yieldIdx": 100,
+    "deportations": 240
+  },
+  {
+    "year": "'17",
+    "yieldIdx": 101,
+    "deportations": 226
+  },
+  {
+    "year": "'18",
+    "yieldIdx": 99,
+    "deportations": 256
+  },
+  {
+    "year": "'19",
+    "yieldIdx": 98,
+    "deportations": 267
+  },
+  {
+    "year": "'20",
+    "yieldIdx": 95,
+    "deportations": 185
+  },
+  {
+    "year": "'21",
+    "yieldIdx": 97,
+    "deportations": 59
+  },
+  {
+    "year": "'22",
+    "yieldIdx": 98,
+    "deportations": 72
+  },
+  {
+    "year": "'23",
+    "yieldIdx": 96,
+    "deportations": 142
+  },
+  {
+    "year": "'24",
+    "yieldIdx": 93,
+    "deportations": 271
+  },
+  {
+    "year": "'25",
+    "yieldIdx": 85,
+    "deportations": 450
+  }
+]
