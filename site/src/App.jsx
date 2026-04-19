@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { PieChart, Pie, Cell, ResponsiveContainer, Legend, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ReferenceLine, LabelList } from "recharts";
+import { PieChart, Pie, Cell, ResponsiveContainer, Legend, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, LabelList } from "recharts";
 
 // ============================================================
 // POSTER CONTENT
@@ -10,17 +10,15 @@ const TITLE_LINE_2 = "could be deported tomorrow.";
 const SUBTITLE = "How do migrant workers in the U.S. produce farming industry influence economic trends, shape immigration policy, and produce diverse perspectives on the role of immigrant labor in American agriculture?";
 const AUTHORS = ["David Park", "Ella Russell", "Sydney Beiting"];
 
-// Reddit stance by political era (project scrape, 3,000 posts, Haiku classification)
-// isTrump flag drives color emphasis on Fig 1.
-const STANCE_BY_ERA = [
-  { era: "Pre-Trump", proEnforce: 17.9, isTrump: false, delta: "" },
-  { era: "Trump I",   proEnforce: 27.2, isTrump: true,  delta: "+9.3 pts" },
-  { era: "COVID",     proEnforce: 15.6, isTrump: false, delta: "" },
-  { era: "Biden",     proEnforce: 17.5, isTrump: false, delta: "" },
-  { era: "Trump II",  proEnforce: 26.4, isTrump: true,  delta: "+8.5 pts" },
+// Share of content classified as pro-enforcement (Reddit) or enforcement-framed (news),
+// by political era. Reddit: 3,000 posts, Haiku-classified. News: MediaCloud, era-bucketed.
+const FIG1_DATA = [
+  { era: "Pre-Trump", reddit: 17.9, news: 3.6 },
+  { era: "Trump I",   reddit: 27.2, news: 4.1 },
+  { era: "COVID",     reddit: 15.6, news: 2.5 },
+  { era: "Biden",     reddit: 17.5, news: 6.0 },
+  { era: "Trump II",  reddit: 26.4, news: 9.0 },
 ];
-// Baseline = mean of the three non-Trump eras. (17.9+15.6+17.5)/3 = 17.00
-const BASELINE = 17.0;
 
 const STATS = [
   { num: "40–50%", label: "of US farmworkers are undocumented", src: "USDA ERS" },
@@ -269,35 +267,41 @@ export default function App() {
             </p>
 
             <div style={{ background: C.panel, border: `1px solid ${C.rule}`, padding: 18, marginBottom: 16 }}>
-              <div style={{ ...serif, fontSize: 19, fontWeight: 600, color: C.navy, marginBottom: 4, lineHeight: 1.15 }}>
-                Pro-enforcement stance jumped ~10 points under both Trump terms.
+              <div style={{ ...serif, fontSize: 19, fontWeight: 600, color: C.navy, marginBottom: 4, lineHeight: 1.2 }}>
+                Social media pro-enforcement stance jumps with Trump terms. Mainstream news barely moves.
               </div>
               <div style={{ fontSize: 13, color: C.muted, marginBottom: 14, lineHeight: 1.45 }}>
-                Share of Reddit posts about migrant farm labor classified as pro-enforcement, by political era. The dashed line is the non-Trump baseline.
+                Share of content classified as pro-enforcement stance (Reddit) or enforcement-framed language (news), by political era.
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 18, marginBottom: 10, ...mono, fontSize: 11, color: C.ink }}>
+                <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+                  <span style={{ width: 14, height: 14, background: C.terra, display: "inline-block" }} /> Reddit (n=3,000)
+                </span>
+                <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+                  <span style={{ width: 14, height: 14, background: C.navy2, display: "inline-block" }} /> News framing (MediaCloud)
+                </span>
               </div>
               <div style={{ height: 320 }}>
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={STANCE_BY_ERA} margin={{ top: 28, right: 16, left: 0, bottom: 8 }} barCategoryGap="22%">
+                  <BarChart data={FIG1_DATA} margin={{ top: 28, right: 16, left: 0, bottom: 8 }} barCategoryGap="20%">
                     <CartesianGrid strokeDasharray="2 2" stroke={C.rule} vertical={false}/>
                     <XAxis dataKey="era" stroke={C.ink} tick={{ fontSize: 13, fontWeight: 500, fontFamily: mono.fontFamily, fill: C.ink }} axisLine={{ stroke: C.rule }} tickLine={false}/>
                     <YAxis stroke={C.muted} tick={{ fontSize: 11, fontFamily: mono.fontFamily }} axisLine={false} tickLine={false} tickFormatter={(v) => `${v}%`} domain={[0, 32]}/>
                     <Tooltip content={<ChartTooltip/>} cursor={{ fill: "rgba(15,37,64,0.05)" }}/>
-                    <ReferenceLine y={BASELINE} stroke={C.muted} strokeDasharray="4 4" strokeWidth={1.5} label={{ value: `non-Trump baseline ~${BASELINE}%`, position: "right", fill: C.muted, fontSize: 10, fontFamily: mono.fontFamily }}/>
-                    <Bar dataKey="proEnforce" name="Pro-enforcement share" radius={[3,3,0,0]}>
-                      {STANCE_BY_ERA.map((d, i) => (
-                        <Cell key={i} fill={d.isTrump ? C.terra : "#a8a095"} />
-                      ))}
+                    <Bar dataKey="reddit" name="Reddit pro-enforcement" fill={C.terra} radius={[3,3,0,0]}>
                       <LabelList
-                        dataKey="proEnforce"
+                        dataKey="reddit"
                         position="top"
                         formatter={(v) => `${v.toFixed(1)}%`}
-                        style={{ fontFamily: mono.fontFamily, fontSize: 12, fontWeight: 500, fill: C.ink }}
+                        style={{ fontFamily: mono.fontFamily, fontSize: 11, fontWeight: 500, fill: C.ink }}
                       />
+                    </Bar>
+                    <Bar dataKey="news" name="News enforcement framing" fill={C.navy2} radius={[3,3,0,0]}>
                       <LabelList
-                        dataKey="delta"
+                        dataKey="news"
                         position="top"
-                        offset={22}
-                        style={{ fontFamily: mono.fontFamily, fontSize: 11, fontWeight: 600, fill: C.terra }}
+                        formatter={(v) => `${v.toFixed(1)}%`}
+                        style={{ fontFamily: mono.fontFamily, fontSize: 11, fontWeight: 500, fill: C.navy2 }}
                       />
                     </Bar>
                   </BarChart>
@@ -305,8 +309,8 @@ export default function App() {
               </div>
               <FigCaption
                 num="1"
-                title="Reddit stance on migrant farm labor, by political era"
-                source="project scrape · Claude Haiku classification, n=3,000 posts"
+                title="Pro-enforcement share by platform and political era"
+                source="Reddit: project scrape, Haiku-classified, n=3,000. News: MediaCloud, n≈3k articles."
               />
             </div>
 
