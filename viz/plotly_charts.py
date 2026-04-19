@@ -747,6 +747,175 @@ def top_entities_by_stance(df: pd.DataFrame, entity_col: str, title: str, top_n:
     return fig
 
 
+def discourse_sensitivity_scatter(sens: pd.DataFrame, title: str) -> go.Figure:
+    """scatter: x = labor exposure (0-1), y = correlation between enforcement framing and
+    60d forward return. labor-heavy commodities should land in the lower-right (high exposure,
+    negative correlation). mechanized baselines should hover near zero."""
+    fig = go.Figure()
+    if sens is None or sens.empty:
+        fig.add_annotation(text="no data", x=0.5, y=0.5, xref="paper", yref="paper", showarrow=False)
+        fig.update_layout(title=title)
+        return fig
+
+    display = {
+        "FCOJ": "FCOJ (orange juice)", "milk_class_iii": "class III milk",
+        "sugar_11": "sugar #11", "coffee": "coffee", "cotton": "cotton",
+        "live_cattle": "live cattle", "soybeans": "soybeans (baseline)",
+        "corn_baseline": "corn (baseline)",
+    }
+    colors = {
+        "FCOJ":           "#e76f51", "milk_class_iii": "#2a9d8f",
+        "sugar_11":       "#e9c46a", "coffee":         "#6f4e37",
+        "cotton":         "#cbd5e8", "live_cattle":    "#8b5a2b",
+        "soybeans":       "#aaaaaa", "corn_baseline":  "#888888",
+    }
+
+    for _, row in sens.iterrows():
+        t = row["ticker"]
+        fig.add_trace(go.Scatter(
+            x=[row["labor_exposure"]], y=[row["corr_pearson"]],
+            mode="markers+text",
+            name=display.get(t, t),
+            marker=dict(size=18, color=colors.get(t, "#888"), line=dict(color="#222", width=1)),
+            text=[display.get(t, t)],
+            textposition="top center",
+            textfont=dict(size=10),
+            hovertemplate=(
+                f"{display.get(t, t)}<br>"
+                f"labor exposure: {row['labor_exposure']:.2f}<br>"
+                f"correlation: {row['corr_pearson']:+.3f}<br>"
+                f"n days: {row['n_obs']:,}<extra></extra>"
+            ),
+            showlegend=False,
+        ))
+
+    fig.add_hline(y=0, line_color="#999", line_width=1, line_dash="dash")
+    fig.update_layout(
+        title=title,
+        xaxis=dict(title="migrant-labor exposure (0 = mechanized, 1 = all hand-picked)", range=[-0.05, 1.05]),
+        yaxis=dict(title="correlation of enforcement framing with 60-day forward return"),
+        height=500,
+        margin=dict(t=60, b=60, l=60, r=40),
+    )
+    return fig
+
+
+def regime_returns_chart(regime: pd.DataFrame, title: str) -> go.Figure:
+    """grouped bar: for each ticker, annualized return in high-enforcement quarters vs low.
+    commodities where the blue bar (low-enforcement) beats the red bar (high) are
+    underperforming when enforcement talk is loud."""
+    fig = go.Figure()
+    if regime is None or regime.empty:
+        fig.add_annotation(text="no data", x=0.5, y=0.5, xref="paper", yref="paper", showarrow=False)
+        fig.update_layout(title=title)
+        return fig
+
+    display = {
+        "FCOJ": "FCOJ", "milk_class_iii": "class III milk",
+        "sugar_11": "sugar #11", "coffee": "coffee", "cotton": "cotton",
+        "live_cattle": "live cattle", "soybeans": "soybeans",
+        "corn_baseline": "corn",
+    }
+    regime = regime.copy().sort_values("labor_exposure", ascending=False)
+    labels = [display.get(t, t) for t in regime["ticker"]]
+
+    fig.add_trace(go.Bar(
+        x=labels, y=regime["annualized_return_high_enf"] * 100,
+        name="high enforcement-framing quarters",
+        marker_color="#c23b22",
+        text=[f"{v*100:+.1f}%" for v in regime["annualized_return_high_enf"]],
+        textposition="outside",
+        hovertemplate="%{x}<br>high enf: %{y:.1f}% annualized<extra></extra>",
+    ))
+    fig.add_trace(go.Bar(
+        x=labels, y=regime["annualized_return_low_enf"] * 100,
+        name="low enforcement-framing quarters",
+        marker_color="#2e75b6",
+        text=[f"{v*100:+.1f}%" for v in regime["annualized_return_low_enf"]],
+        textposition="outside",
+        hovertemplate="%{x}<br>low enf: %{y:.1f}% annualized<extra></extra>",
+    ))
+    fig.update_layout(
+        title=title,
+        barmode="group",
+        xaxis_title="commodity (sorted by labor exposure, highest on left)",
+        yaxis=dict(title="annualized return (%)", ticksuffix="%"),
+        height=440,
+        margin=dict(t=60, b=60, l=60, r=20),
+        legend=dict(orientation="h", yanchor="bottom", y=-0.25, x=0),
+    )
+    fig.add_hline(y=0, line_color="#333", line_width=1)
+    return fig
+
+
+def fcoj_deep_dive(fcoj_daily: pd.DataFrame, enf_daily: pd.Series, events: list, title: str) -> go.Figure:
+    """dual-axis time series for FCOJ (left axis, price) + enforcement-framing share (right axis, %).
+    highlights the jan 2025 mass deportation event with a callout.
+    fcoj_daily: df with date, close. enf_daily: series indexed by date."""
+    fig = go.Figure()
+    if fcoj_daily is None or fcoj_daily.empty:
+        fig.add_annotation(text="no FCOJ data", x=0.5, y=0.5, xref="paper", yref="paper", showarrow=False)
+        fig.update_layout(title=title)
+        return fig
+
+    fd = fcoj_daily.copy()
+    fd["date"] = pd.to_datetime(fd["date"])
+    fd = fd.sort_values("date")
+    fig.add_trace(go.Scatter(
+        x=fd["date"], y=fd["close"],
+        mode="lines", name="FCOJ close (USD/lb)",
+        line=dict(color="#e76f51", width=2),
+        yaxis="y1",
+        hovertemplate="%{x|%Y-%m-%d} — FCOJ: $%{y:.2f}<extra></extra>",
+    ))
+
+    if enf_daily is not None and len(enf_daily) > 0:
+        ed = enf_daily.copy()
+        if not isinstance(ed.index, pd.DatetimeIndex):
+            ed.index = pd.to_datetime(ed.index)
+        fig.add_trace(go.Scatter(
+            x=ed.index, y=ed.values * 100,
+            mode="lines", name="news enforcement framing (%)",
+            line=dict(color="#c23b22", width=1.2, dash="dash"),
+            fill="tozeroy", fillcolor="rgba(194,59,34,0.12)",
+            yaxis="y2",
+            hovertemplate="%{x|%Y-%m-%d} — enforcement framing: %{y:.1f}%<extra></extra>",
+        ))
+
+    # overlay event markers
+    for ev in events:
+        d = datetime.strptime(str(ev["date"])[:10], "%Y-%m-%d")
+        cat = ev.get("category", "policy")
+        fig.add_vline(
+            x=d, line_color=CATEGORY_COLORS.get(cat, "#555"),
+            line_width=1.2 if cat == "election" else 1.0,
+            line_dash=CATEGORY_DASH.get(cat, "dash"),
+            opacity=0.7,
+        )
+
+    # explicit callout on jan 2025
+    jan25 = datetime(2025, 1, 20)
+    fig.add_annotation(
+        x=jan25, y=1.0, yref="paper",
+        text="Jan 2025 mass deportation ops begin",
+        showarrow=True, arrowhead=2, ax=-60, ay=-30,
+        font=dict(size=11, color="#c23b22"), bgcolor="rgba(255,240,230,0.9)",
+        bordercolor="#c23b22", borderwidth=1,
+    )
+
+    fig.update_layout(
+        title=title,
+        xaxis_title="year",
+        yaxis=dict(title="FCOJ close price (USD/lb)", side="left"),
+        yaxis2=dict(title="news enforcement framing (%)", overlaying="y", side="right", tickformat=".0f", ticksuffix="%"),
+        hovermode="x unified",
+        height=500,
+        margin=dict(t=90, b=40, l=60, r=60),
+        legend=dict(orientation="h", yanchor="bottom", y=-0.22, x=0),
+    )
+    return fig
+
+
 def subreddit_small_multiples(reddit_raw: pd.DataFrame, title: str, top_n: int = 6) -> go.Figure:
     """one mini stacked-bar per subreddit showing stance mix across eras.
     helps see whether the trump-era jump is universal or driven by a few subs."""
