@@ -105,23 +105,23 @@ const mono  = { fontFamily: 'JetBrains Mono, "SF Mono", Monaco, Consolas, monosp
 
 function SectionHeading({ children, kicker }) {
   return (
-    <div style={{ marginBottom: 14 }}>
+    <div style={{ marginBottom: 8 }}>
       {kicker && (
-        <div style={{ ...mono, fontSize: 10, letterSpacing: "0.2em", color: C.terra, marginBottom: 4, textTransform: "uppercase", fontWeight: 500 }}>
+        <div style={{ ...mono, fontSize: 9.5, letterSpacing: "0.2em", color: C.terra, marginBottom: 3, textTransform: "uppercase", fontWeight: 500 }}>
           {kicker}
         </div>
       )}
-      <div style={{ ...serif, fontSize: 24, fontWeight: 600, color: C.navy, lineHeight: 1.1, letterSpacing: "-0.01em" }}>
+      <div style={{ ...serif, fontSize: 20, fontWeight: 600, color: C.navy, lineHeight: 1.1, letterSpacing: "-0.01em" }}>
         {children}
       </div>
-      <div style={{ height: 2.5, width: 40, background: C.terra, marginTop: 8 }} />
+      <div style={{ height: 2, width: 34, background: C.terra, marginTop: 5 }} />
     </div>
   );
 }
 
 function FigCaption({ num, title, source }) {
   return (
-    <div style={{ ...mono, fontSize: 11, color: C.muted, letterSpacing: "0.04em", marginTop: 10, lineHeight: 1.4 }}>
+    <div style={{ ...mono, fontSize: 10, color: C.muted, letterSpacing: "0.04em", marginTop: 6, lineHeight: 1.35 }}>
       <span style={{ color: C.terra, fontWeight: 500 }}>Fig. {num}</span> · {title}
       {source && <span style={{ fontStyle: "italic" }}> · {source}</span>}
     </div>
@@ -142,7 +142,7 @@ function ChartTooltip({ active, payload, label }) {
 
 function Fig({ src, alt, num, title, source }) {
   return (
-    <div style={{ background: C.panel, border: `1px solid ${C.rule}`, padding: 10, marginBottom: 12 }}>
+    <div style={{ background: C.panel, border: `1px solid ${C.rule}`, padding: 8, marginBottom: 10 }}>
       <img
         src={src}
         alt={alt}
@@ -167,7 +167,7 @@ export default function App() {
   }, []);
 
   return (
-    <div style={{ background: "#e8e2d4", minHeight: "100vh", padding: "24px 0", ...sans }}>
+    <div style={{ background: "#e8e2d4", minHeight: "100vh", padding: "16px 0", ...sans }}>
       <div className="poster" style={{
         background: C.bg,
         color: C.ink,
@@ -178,60 +178,60 @@ export default function App() {
       }}>
 
         {/* ============ HEADER STRIP ============ */}
-        <div style={{ background: C.scarlet, color: "#fff", padding: "13px 56px", display: "flex", justifyContent: "space-between", alignItems: "center", ...mono, fontSize: 13, letterSpacing: "0.08em" }}>
+        <div style={{ background: C.scarlet, color: "#fff", padding: "9px 40px", display: "flex", justifyContent: "space-between", alignItems: "center", ...mono, fontSize: 11.5, letterSpacing: "0.08em" }}>
           <div style={{ textTransform: "uppercase" }}>
             The Ohio State University <span style={{ opacity: 0.7, margin: "0 10px" }}>·</span> College of Food, Agricultural, and Environmental Sciences <span style={{ opacity: 0.7, margin: "0 10px" }}>·</span> Dept. of ACEL
           </div>
-          <div style={{ background: "#fff", color: C.scarlet, padding: "4px 12px", fontWeight: 600, letterSpacing: "0.12em" }}>
+          <div style={{ background: "#fff", color: C.scarlet, padding: "3px 10px", fontWeight: 600, letterSpacing: "0.12em" }}>
             AGRCOMM 2330
           </div>
         </div>
 
         {/* ============ TITLE BLOCK ============ */}
-        <div style={{ padding: "40px 56px 32px", borderBottom: `1px solid ${C.rule}` }}>
-          <div style={{ ...mono, fontSize: 12, letterSpacing: "0.2em", color: C.terra, textTransform: "uppercase", marginBottom: 14 }}>
+        <div style={{ padding: "22px 40px 18px", borderBottom: `1px solid ${C.rule}` }}>
+          <div style={{ ...mono, fontSize: 11, letterSpacing: "0.2em", color: C.terra, textTransform: "uppercase", marginBottom: 8 }}>
             Issue Case Study · Spring 2026
           </div>
-          <h1 style={{ ...serif, fontSize: 66, lineHeight: 0.98, letterSpacing: "-0.028em", color: C.navy, fontWeight: 500, margin: 0 }}>
+          <h1 style={{ ...serif, fontSize: 54, lineHeight: 0.98, letterSpacing: "-0.028em", color: C.navy, fontWeight: 500, margin: 0 }}>
             {TITLE_LINE_1}{" "}
             <em style={{ color: C.terra, fontWeight: 400 }}>{TITLE_LINE_2}</em>
           </h1>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginTop: 20, gap: 48 }}>
-            <p style={{ ...serif, fontStyle: "italic", fontSize: 19, lineHeight: 1.45, color: C.ink, maxWidth: 920, margin: 0 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginTop: 12, gap: 40 }}>
+            <p style={{ ...serif, fontStyle: "italic", fontSize: 16, lineHeight: 1.4, color: C.ink, maxWidth: 880, margin: 0 }}>
               {SUBTITLE}
             </p>
-            <div style={{ ...mono, fontSize: 13, color: C.ink, textAlign: "right", letterSpacing: "0.05em", lineHeight: 1.7, whiteSpace: "nowrap" }}>
+            <div style={{ ...mono, fontSize: 12, color: C.ink, textAlign: "right", letterSpacing: "0.05em", lineHeight: 1.55, whiteSpace: "nowrap" }}>
               {AUTHORS.map((a, i) => (
-                <div key={i}><span style={{ color: C.terra, marginRight: 8 }}>·</span>{a}</div>
+                <div key={i}><span style={{ color: C.terra, marginRight: 6 }}>·</span>{a}</div>
               ))}
             </div>
           </div>
         </div>
 
         {/* ============ STATS STRIP ============ */}
-        <div style={{ background: C.panel, borderBottom: `1px solid ${C.rule}`, padding: "22px 56px", display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 24 }}>
+        <div style={{ background: C.panel, borderBottom: `1px solid ${C.rule}`, padding: "14px 40px", display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 20 }}>
           {STATS.map((s, i) => (
-            <div key={i} style={{ borderLeft: i > 0 ? `1px solid ${C.rule}` : "none", paddingLeft: i > 0 ? 20 : 0 }}>
-              <div style={{ ...serif, fontSize: 34, fontWeight: 500, color: C.terra, lineHeight: 1, letterSpacing: "-0.02em" }}>{s.num}</div>
-              <div style={{ fontSize: 12.5, lineHeight: 1.35, color: C.ink, marginTop: 6 }}>{s.label}</div>
-              <div style={{ ...mono, fontSize: 10, letterSpacing: "0.12em", color: C.muted, marginTop: 5, textTransform: "uppercase" }}>{s.src}</div>
+            <div key={i} style={{ borderLeft: i > 0 ? `1px solid ${C.rule}` : "none", paddingLeft: i > 0 ? 16 : 0 }}>
+              <div style={{ ...serif, fontSize: 28, fontWeight: 500, color: C.terra, lineHeight: 1, letterSpacing: "-0.02em" }}>{s.num}</div>
+              <div style={{ fontSize: 11.5, lineHeight: 1.3, color: C.ink, marginTop: 4 }}>{s.label}</div>
+              <div style={{ ...mono, fontSize: 9, letterSpacing: "0.12em", color: C.muted, marginTop: 3, textTransform: "uppercase" }}>{s.src}</div>
             </div>
           ))}
         </div>
 
         {/* ============ 3-COLUMN BODY ============ */}
-        <div style={{ display: "grid", gridTemplateColumns: "0.9fr 1.5fr 1.2fr", gap: 0, padding: "36px 56px", borderBottom: `1px solid ${C.rule}` }}>
+        <div style={{ display: "grid", gridTemplateColumns: "0.9fr 1.5fr 1.2fr", gap: 0, padding: "20px 40px", borderBottom: `1px solid ${C.rule}` }}>
 
           {/* ----- COLUMN 1 : SCOPE / METHODS / TIMELINE ----- */}
-          <div style={{ paddingRight: 32, borderRight: `1px solid ${C.rule}` }}>
+          <div style={{ paddingRight: 24, borderRight: `1px solid ${C.rule}` }}>
             <SectionHeading kicker="01 · Scope">Project Scope</SectionHeading>
-            <p style={{ fontSize: 13.5, lineHeight: 1.6, color: C.ink, margin: "0 0 18px" }}>
+            <p style={{ fontSize: 12.5, lineHeight: 1.5, color: C.ink, margin: "0 0 12px" }}>
               Three independent analyses of one question: how U.S. migrant farm labor shapes the food supply, the policy that moves around it, and the cost that hits working-class families.
               Methods combined news framing from MediaCloud, Reddit and Facebook stance classification via Claude Haiku, and commodity event studies from 2010 to 2026.
             </p>
 
             <SectionHeading kicker="02 · Methods">Methods</SectionHeading>
-            <ul style={{ fontSize: 12.5, lineHeight: 1.55, color: C.ink, margin: "0 0 18px", paddingLeft: 16 }}>
+            <ul style={{ fontSize: 11.5, lineHeight: 1.45, color: C.ink, margin: "0 0 12px", paddingLeft: 14 }}>
               <li><b>News framing:</b> ~3k articles tagged pre-Trump through Trump II.</li>
               <li><b>Stance:</b> 3,000 Reddit posts classified pro-enforcement, pro-labor, or mixed.</li>
               <li><b>Topic prevalence:</b> 8 keyword cohorts, annual share 2010 to 2025.</li>
@@ -240,19 +240,19 @@ export default function App() {
             </ul>
 
             <SectionHeading kicker="03 · Context">A Century of Labor Policy</SectionHeading>
-            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
               {TIMELINE.map((t, i) => (
-                <div key={i} style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
+                <div key={i} style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
                   <div style={{
-                    flexShrink: 0, width: 10, height: 10, borderRadius: "50%",
+                    flexShrink: 0, width: 9, height: 9, borderRadius: "50%",
                     background: t.hot ? C.terra : C.navy2,
-                    boxShadow: t.hot ? `0 0 0 4px rgba(200,80,43,0.2)` : "none",
-                    marginTop: 7,
+                    boxShadow: t.hot ? `0 0 0 3px rgba(200,80,43,0.2)` : "none",
+                    marginTop: 5,
                   }} />
                   <div>
-                    <div style={{ ...mono, fontSize: 10.5, color: C.terra, letterSpacing: "0.05em" }}>{t.date}</div>
-                    <div style={{ ...serif, fontSize: 14.5, fontWeight: 600, color: C.navy, lineHeight: 1.2 }}>{t.t}</div>
-                    <div style={{ fontSize: 12, lineHeight: 1.45, color: C.ink }}>{t.d}</div>
+                    <div style={{ ...mono, fontSize: 10, color: C.terra, letterSpacing: "0.05em" }}>{t.date}</div>
+                    <div style={{ ...serif, fontSize: 13, fontWeight: 600, color: C.navy, lineHeight: 1.15 }}>{t.t}</div>
+                    <div style={{ fontSize: 11, lineHeight: 1.35, color: C.ink }}>{t.d}</div>
                   </div>
                 </div>
               ))}
@@ -260,48 +260,45 @@ export default function App() {
           </div>
 
           {/* ----- COLUMN 2 : DISCOURSE + MARKETS (David) ----- */}
-          <div style={{ padding: "0 32px", borderRight: `1px solid ${C.rule}` }}>
+          <div style={{ padding: "0 24px", borderRight: `1px solid ${C.rule}` }}>
             <SectionHeading kicker="Finding 1 · David Park">The narrative shifts. Working families pay the bill.</SectionHeading>
-            <p style={{ fontSize: 13.5, lineHeight: 1.6, color: C.ink, margin: "0 0 14px" }}>
+            <p style={{ fontSize: 12.5, lineHeight: 1.5, color: C.ink, margin: "0 0 10px" }}>
               Pro-enforcement framing on social platforms jumped 10 points between Obama and Trump. Reddit pro-enforcement stance moved from 17.9% pre-Trump to 26 to 27% in both Trump terms. Terms like <b>"mass deportation"</b> grew from 3.6% to 9% of farm coverage. The story changed online before the policy did.
             </p>
 
-            <div style={{ background: C.panel, border: `1px solid ${C.rule}`, padding: 18, marginBottom: 16 }}>
-              <div style={{ ...serif, fontSize: 19, fontWeight: 600, color: C.navy, marginBottom: 4, lineHeight: 1.2 }}>
+            <div style={{ background: C.panel, border: `1px solid ${C.rule}`, padding: 12, marginBottom: 10 }}>
+              <div style={{ ...serif, fontSize: 16, fontWeight: 600, color: C.navy, marginBottom: 2, lineHeight: 1.2 }}>
                 Social media pro-enforcement stance jumps with Trump terms. Mainstream news barely moves.
               </div>
-              <div style={{ fontSize: 13, color: C.muted, marginBottom: 14, lineHeight: 1.45 }}>
-                Share of content classified as pro-enforcement stance (Reddit) or enforcement-framed language (news), by political era.
-              </div>
-              <div style={{ display: "flex", alignItems: "center", gap: 18, marginBottom: 10, ...mono, fontSize: 11, color: C.ink }}>
-                <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
-                  <span style={{ width: 14, height: 14, background: C.terra, display: "inline-block" }} /> Reddit (n=3,000)
+              <div style={{ display: "flex", alignItems: "center", gap: 16, marginTop: 6, marginBottom: 4, ...mono, fontSize: 10.5, color: C.ink }}>
+                <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
+                  <span style={{ width: 12, height: 12, background: C.terra, display: "inline-block" }} /> Reddit (n=3,000)
                 </span>
-                <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
-                  <span style={{ width: 14, height: 14, background: C.navy2, display: "inline-block" }} /> News framing (MediaCloud)
+                <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
+                  <span style={{ width: 12, height: 12, background: C.navy2, display: "inline-block" }} /> News framing (MediaCloud)
                 </span>
               </div>
-              <div style={{ height: 320 }}>
+              <div style={{ height: 220 }}>
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={FIG1_DATA} margin={{ top: 28, right: 16, left: 0, bottom: 8 }} barCategoryGap="20%">
+                  <BarChart data={FIG1_DATA} margin={{ top: 22, right: 10, left: -6, bottom: 4 }} barCategoryGap="18%">
                     <CartesianGrid strokeDasharray="2 2" stroke={C.rule} vertical={false}/>
-                    <XAxis dataKey="era" stroke={C.ink} tick={{ fontSize: 13, fontWeight: 500, fontFamily: mono.fontFamily, fill: C.ink }} axisLine={{ stroke: C.rule }} tickLine={false}/>
-                    <YAxis stroke={C.muted} tick={{ fontSize: 11, fontFamily: mono.fontFamily }} axisLine={false} tickLine={false} tickFormatter={(v) => `${v}%`} domain={[0, 32]}/>
+                    <XAxis dataKey="era" stroke={C.ink} tick={{ fontSize: 12, fontWeight: 500, fontFamily: mono.fontFamily, fill: C.ink }} axisLine={{ stroke: C.rule }} tickLine={false}/>
+                    <YAxis stroke={C.muted} tick={{ fontSize: 10, fontFamily: mono.fontFamily }} axisLine={false} tickLine={false} tickFormatter={(v) => `${v}%`} domain={[0, 32]}/>
                     <Tooltip content={<ChartTooltip/>} cursor={{ fill: "rgba(15,37,64,0.05)" }}/>
-                    <Bar dataKey="reddit" name="Reddit pro-enforcement" fill={C.terra} radius={[3,3,0,0]}>
+                    <Bar dataKey="reddit" name="Reddit pro-enforcement" fill={C.terra} radius={[2,2,0,0]}>
                       <LabelList
                         dataKey="reddit"
                         position="top"
                         formatter={(v) => `${v.toFixed(1)}%`}
-                        style={{ fontFamily: mono.fontFamily, fontSize: 11, fontWeight: 500, fill: C.ink }}
+                        style={{ fontFamily: mono.fontFamily, fontSize: 10, fontWeight: 500, fill: C.ink }}
                       />
                     </Bar>
-                    <Bar dataKey="news" name="News enforcement framing" fill={C.navy2} radius={[3,3,0,0]}>
+                    <Bar dataKey="news" name="News enforcement framing" fill={C.navy2} radius={[2,2,0,0]}>
                       <LabelList
                         dataKey="news"
                         position="top"
                         formatter={(v) => `${v.toFixed(1)}%`}
-                        style={{ fontFamily: mono.fontFamily, fontSize: 11, fontWeight: 500, fill: C.navy2 }}
+                        style={{ fontFamily: mono.fontFamily, fontSize: 10, fontWeight: 500, fill: C.navy2 }}
                       />
                     </Bar>
                   </BarChart>
@@ -314,7 +311,7 @@ export default function App() {
               />
             </div>
 
-            <p style={{ fontSize: 11.5, lineHeight: 1.55, color: C.ink, margin: "14px 0 10px" }}>
+            <p style={{ fontSize: 12.5, lineHeight: 1.5, color: C.ink, margin: "10px 0 10px" }}>
               Markets moved too. Orange juice futures dropped 35% that same winter. Most of that was Brazilian supply recovery, not U.S. enforcement. But that's the point: <b>hedge funds can price in a coming shock. A family at the grocery store can't.</b> When produce prices climbed after the raids, working-class households ate the cost. When family farms lost harvests, no one covered the loss.
             </p>
 
@@ -328,101 +325,101 @@ export default function App() {
           </div>
 
           {/* ----- COLUMN 3 : WORKFORCE + YIELDS (Sydney + Ella) ----- */}
-          <div style={{ paddingLeft: 32 }}>
+          <div style={{ paddingLeft: 24 }}>
             <SectionHeading kicker="Finding 2 · Sydney Beiting">The hands that pick America's food can't afford to buy it.</SectionHeading>
-            <p style={{ fontSize: 13.5, lineHeight: 1.6, color: C.ink, margin: "0 0 12px" }}>
+            <p style={{ fontSize: 12.5, lineHeight: 1.5, color: C.ink, margin: "0 0 8px" }}>
               <b>61%</b> of the U.S. farm workforce is immigrant. 78% self-identify as Hispanic; 63% are from Mexico. Average farmworker family income sits between <b>$17.5k and $20k</b>, below the federal poverty line for a family of four.
             </p>
-            <p style={{ fontSize: 13.5, lineHeight: 1.6, color: C.ink, margin: "0 0 16px" }}>
+            <p style={{ fontSize: 12.5, lineHeight: 1.5, color: C.ink, margin: "0 0 10px" }}>
               Between <b>1.1 and 1.9 million</b> farmworkers and their children don't know where their next meal will come from. They die from heat-related illness at rates 20% higher than workers in other industries. 78% live in crowded housing regardless of whether the unit meets code.
             </p>
 
-            <div style={{ background: C.panel, border: `1px solid ${C.rule}`, padding: 14, marginBottom: 10, height: 260 }}>
+            <div style={{ background: C.panel, border: `1px solid ${C.rule}`, padding: 8, marginBottom: 6, height: 180 }}>
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
-                  <Pie data={WORKFORCE} dataKey="value" cx="38%" cy="50%" innerRadius={54} outerRadius={100} paddingAngle={2} strokeWidth={2} stroke="#faf6ec">
+                  <Pie data={WORKFORCE} dataKey="value" cx="38%" cy="50%" innerRadius={38} outerRadius={72} paddingAngle={2} strokeWidth={2} stroke="#faf6ec">
                     {WORKFORCE.map((e, i) => <Cell key={i} fill={e.color}/>)}
                   </Pie>
                   <Legend
                     layout="vertical" verticalAlign="middle" align="right" iconType="square"
-                    wrapperStyle={{ fontFamily: "DM Sans", fontSize: 13, paddingRight: 12 }}
+                    wrapperStyle={{ fontFamily: "DM Sans", fontSize: 11.5, paddingRight: 8 }}
                     formatter={(v, e) => <span style={{ color: C.ink }}>{v}: {e.payload.value}%</span>}
                   />
                 </PieChart>
               </ResponsiveContainer>
             </div>
-            <div style={{ ...mono, fontSize: 11, color: C.muted, letterSpacing: "0.04em", marginBottom: 24 }}>
+            <div style={{ ...mono, fontSize: 10, color: C.muted, letterSpacing: "0.04em", marginBottom: 14 }}>
               <span style={{ color: C.terra, fontWeight: 500 }}>Fig. 3</span> · U.S. farm workforce composition, 2022 · <span style={{ fontStyle: "italic" }}>USDA ERS</span>
             </div>
 
             <SectionHeading kicker="Finding 3 · Ella Russell">When deportations rise, harvests rot.</SectionHeading>
-            <p style={{ fontSize: 13.5, lineHeight: 1.6, color: C.ink, margin: "0 0 12px" }}>
+            <p style={{ fontSize: 12.5, lineHeight: 1.5, color: C.ink, margin: "0 0 8px" }}>
               You can't pick produce without pickers. The 2025 California raids cut farm labor up to <b>40%</b> overnight: strawberries stayed on vines, citrus fell unpicked, <b>$3–7B</b> in crop losses within a single quarter, produce prices jumped <b>5–12%</b> at the register.
             </p>
-            <p style={{ fontSize: 13.5, lineHeight: 1.6, color: C.ink, margin: 0 }}>
+            <p style={{ fontSize: 12.5, lineHeight: 1.5, color: C.ink, margin: 0 }}>
               For family farms, which are 88% of U.S. farms with a median operator age of 58, this isn't volatility. It's existential. A single lost harvest can end a generational operation. And the 5–12% produce price jump lands on working-class grocery shoppers who had nothing to do with the policy.
             </p>
           </div>
         </div>
 
         {/* ============ CONCLUSIONS + RECS + BIBLIO STRIP ============ */}
-        <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1.2fr 1fr", gap: 0, padding: "32px 56px", borderBottom: `1px solid ${C.rule}` }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1.2fr 1fr", gap: 0, padding: "18px 40px", borderBottom: `1px solid ${C.rule}` }}>
 
-          <div style={{ paddingRight: 32, borderRight: `1px solid ${C.rule}` }}>
+          <div style={{ paddingRight: 24, borderRight: `1px solid ${C.rule}` }}>
             <SectionHeading kicker="Conclusions">Six steps. Same people at the bottom.</SectionHeading>
-            <p style={{ fontSize: 13.5, lineHeight: 1.6, color: C.ink, margin: "0 0 14px" }}>
+            <p style={{ fontSize: 12.5, lineHeight: 1.5, color: C.ink, margin: "0 0 8px" }}>
               A framing shift online becomes an enforcement policy, becomes a rotting harvest, becomes a grocery-bill increase, and every step lands on the same working-class households. Policy, markets, and media circle back. The bill does not.
             </p>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8, marginTop: 10 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 6, marginTop: 6 }}>
               {DOMINO.map((d, i) => (
                 <div key={i} style={{
                   background: i === DOMINO.length - 1 ? C.terra : C.navy,
                   color: "#fff",
-                  padding: "12px 14px",
+                  padding: "8px 10px",
                   position: "relative",
                 }}>
-                  <div style={{ ...mono, fontSize: 10, letterSpacing: "0.15em", opacity: 0.6, textTransform: "uppercase" }}>Step {i+1}</div>
-                  <div style={{ ...serif, fontSize: 17, fontWeight: 600, marginTop: 3, marginBottom: 5 }}>{d.label}</div>
-                  <div style={{ fontSize: 11.5, lineHeight: 1.4, opacity: 0.92 }}>{d.desc}</div>
-                  <div style={{ ...mono, fontSize: 9.5, color: i === DOMINO.length - 1 ? "#fff" : C.terra, marginTop: 7, letterSpacing: "0.03em" }}>{d.ex}</div>
+                  <div style={{ ...mono, fontSize: 9, letterSpacing: "0.15em", opacity: 0.6, textTransform: "uppercase" }}>Step {i+1}</div>
+                  <div style={{ ...serif, fontSize: 15, fontWeight: 600, marginTop: 2, marginBottom: 3 }}>{d.label}</div>
+                  <div style={{ fontSize: 10.5, lineHeight: 1.35, opacity: 0.92 }}>{d.desc}</div>
+                  <div style={{ ...mono, fontSize: 9, color: i === DOMINO.length - 1 ? "#fff" : C.terra, marginTop: 5, letterSpacing: "0.03em" }}>{d.ex}</div>
                 </div>
               ))}
             </div>
           </div>
 
-          <div style={{ padding: "0 32px", borderRight: `1px solid ${C.rule}` }}>
+          <div style={{ padding: "0 24px", borderRight: `1px solid ${C.rule}` }}>
             <SectionHeading kicker="Recommendations">What to do about it</SectionHeading>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
               {RECS.map((r, i) => (
-                <div key={i} style={{ borderLeft: `2px solid ${C.terra}`, paddingLeft: 14 }}>
-                  <div style={{ ...mono, fontSize: 10, letterSpacing: "0.15em", color: C.terra, textTransform: "uppercase" }}>For {r.who}</div>
-                  <div style={{ ...serif, fontSize: 15, fontWeight: 600, color: C.navy, lineHeight: 1.2, margin: "4px 0 5px" }}>{r.short}</div>
-                  <div style={{ fontSize: 12, lineHeight: 1.5, color: C.ink }}>{r.long}</div>
+                <div key={i} style={{ borderLeft: `2px solid ${C.terra}`, paddingLeft: 10 }}>
+                  <div style={{ ...mono, fontSize: 9, letterSpacing: "0.15em", color: C.terra, textTransform: "uppercase" }}>For {r.who}</div>
+                  <div style={{ ...serif, fontSize: 13, fontWeight: 600, color: C.navy, lineHeight: 1.2, margin: "2px 0 3px" }}>{r.short}</div>
+                  <div style={{ fontSize: 10.5, lineHeight: 1.4, color: C.ink }}>{r.long}</div>
                 </div>
               ))}
             </div>
-            <p style={{ ...serif, fontStyle: "italic", fontSize: 16, lineHeight: 1.45, color: C.navy, margin: "20px 0 0", paddingTop: 14, borderTop: `1px solid ${C.rule}` }}>
+            <p style={{ ...serif, fontStyle: "italic", fontSize: 13.5, lineHeight: 1.4, color: C.navy, margin: "10px 0 0", paddingTop: 8, borderTop: `1px solid ${C.rule}` }}>
               Policy moves markets. Markets move framing. Framing moves opinion. Opinion moves the next policy. But the bill lands in one place. <span style={{ fontStyle: "normal", color: C.terra }}>On the families who pick America's food, grow America's food, and can't afford to buy it.</span>
             </p>
           </div>
 
-          <div style={{ paddingLeft: 32 }}>
+          <div style={{ paddingLeft: 24 }}>
             <SectionHeading kicker="Bibliography">Bibliography</SectionHeading>
-            <ol style={{ ...mono, fontSize: 10.5, lineHeight: 1.55, color: C.ink, margin: 0, paddingLeft: 22 }}>
-              {SOURCES.map((s, i) => <li key={i} style={{ marginBottom: 5 }}>{s}</li>)}
+            <ol style={{ ...mono, fontSize: 9.5, lineHeight: 1.4, color: C.ink, margin: 0, paddingLeft: 18 }}>
+              {SOURCES.map((s, i) => <li key={i} style={{ marginBottom: 3 }}>{s}</li>)}
             </ol>
           </div>
         </div>
 
         {/* ============ FOOTER / LOGO ============ */}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "24px 56px", background: "#fff" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 20 }}>
-            <img src="/osu-logo.png" alt="The Ohio State University" style={{ height: 56, width: "auto", display: "block" }} />
-            <div style={{ fontSize: 12, color: C.muted, lineHeight: 1.45, borderLeft: `1px solid ${C.rule}`, paddingLeft: 18 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "14px 40px", background: "#fff" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+            <img src="/osu-logo.png" alt="The Ohio State University" style={{ height: 44, width: "auto", display: "block" }} />
+            <div style={{ fontSize: 11, color: C.muted, lineHeight: 1.4, borderLeft: `1px solid ${C.rule}`, paddingLeft: 14 }}>
               College of Food, Agricultural,<br/>and Environmental Sciences
             </div>
           </div>
-          <div style={{ ...mono, fontSize: 11.5, letterSpacing: "0.15em", color: C.muted, textTransform: "uppercase", textAlign: "right", lineHeight: 1.55 }}>
+          <div style={{ ...mono, fontSize: 10.5, letterSpacing: "0.15em", color: C.muted, textTransform: "uppercase", textAlign: "right", lineHeight: 1.5 }}>
             <div>Acknowledgements: Dr. Annie Specht, instructor</div>
             <div>AGRCOMM 2330 · Issue Case Study · April 2026</div>
           </div>
