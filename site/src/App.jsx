@@ -392,12 +392,11 @@ export default function App() {
         </div>
 
         {/* ============ FOOTER / LOGO ============ */}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 40px", background: "#fff" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-            <OsuBlockO />
-            <div style={{ ...sans, lineHeight: 1.2 }}>
-              <div style={{ ...serif, fontSize: 15, fontWeight: 600, color: C.ink, letterSpacing: "0.02em" }}>THE OHIO STATE UNIVERSITY</div>
-              <div style={{ fontSize: 10, color: C.muted }}>College of Food, Agricultural, and Environmental Sciences</div>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "18px 40px", background: "#fff" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+            <img src="/osu-logo.png" alt="The Ohio State University" style={{ height: 44, width: "auto", display: "block" }} />
+            <div style={{ fontSize: 10, color: C.muted, lineHeight: 1.4, borderLeft: `1px solid ${C.rule}`, paddingLeft: 14 }}>
+              College of Food, Agricultural,<br/>and Environmental Sciences
             </div>
           </div>
           <div style={{ ...mono, fontSize: 10, letterSpacing: "0.15em", color: C.muted, textTransform: "uppercase", textAlign: "right", lineHeight: 1.5 }}>
@@ -419,40 +418,3 @@ export default function App() {
   );
 }
 
-// ============================================================
-// OSU BLOCK O (simplified SVG placeholder)
-// ============================================================
-
-function OsuBlockO() {
-  // Block O approximation: scarlet rounded-rectangle ring with an "O" hole cut out via evenodd fill.
-  return (
-    <svg width="56" height="44" viewBox="0 0 112 88" xmlns="http://www.w3.org/2000/svg" aria-label="OSU Block O">
-      <path
-        fill="#bb0000"
-        fillRule="evenodd"
-        d="
-          M 10 8
-          h 92
-          a 8 8 0 0 1 8 8
-          v 56
-          a 8 8 0 0 1 -8 8
-          h -92
-          a 8 8 0 0 1 -8 -8
-          v -56
-          a 8 8 0 0 1 8 -8
-          z
-          M 32 28
-          h 48
-          a 6 6 0 0 1 6 6
-          v 20
-          a 6 6 0 0 1 -6 6
-          h -48
-          a 6 6 0 0 1 -6 -6
-          v -20
-          a 6 6 0 0 1 6 -6
-          z
-        "
-      />
-    </svg>
-  );
-}
