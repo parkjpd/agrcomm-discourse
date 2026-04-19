@@ -5,18 +5,18 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Legend } from "recharts";
 // POSTER CONTENT
 // ============================================================
 
-const TITLE_LINE_1 = "The raids hit.";
-const TITLE_LINE_2 = "The markets moved first.";
-const SUBTITLE = "How migrant workers in the U.S. produce farming industry shape economic trends, immigration policy, and the discourse that moves both.";
+const TITLE_LINE_1 = "The food gets picked.";
+const TITLE_LINE_2 = "The people who picked it go hungry.";
+const SUBTITLE = "How migrant workers in U.S. produce farming shape the food on your table, the policy that moves around them, and the cost that lands on working-class households on both sides of the counter.";
 const AUTHORS = ["David Park", "Ella Russell", "Sydney Beiting"];
 
 const STATS = [
-  { num: "40–50%", label: "US farmworkers undocumented", src: "USDA ERS" },
-  { num: "$3–7B", label: "2025 CA raid crop losses", src: "FTS-382" },
-  { num: "−35.4%", label: "FCOJ, 30 days post-raid", src: "Yahoo OJ=F" },
-  { num: "+10 pt", label: "pro-enforcement framing Δ", src: "project scrape" },
-  { num: "78%", label: "farmworkers Hispanic", src: "NCFH 2023" },
-  { num: "20%", label: "families below poverty", src: "NAWS 2019" },
+  { num: "40–50%", label: "of US farmworkers are undocumented", src: "USDA ERS" },
+  { num: "$3–7B", label: "crop losses, 2025 CA ICE raids", src: "USDA FTS-382" },
+  { num: "5–12%", label: "produce price jump after the raids", src: "FreshFruitPortal" },
+  { num: "8×", label: "farmworker families more food-insecure than the public", src: "UCS · NAWS" },
+  { num: "$17.5k", label: "average farmworker family annual income", src: "Farmworker Justice" },
+  { num: "1.9M", label: "farmworkers + kin unsure of their next meal", src: "UCS, 2023" },
 ];
 
 const TIMELINE = [
@@ -25,7 +25,7 @@ const TIMELINE = [
   { date: "2002", t: "Homeland Security Act", d: "INS dissolved, ICE created." },
   { date: "2016", t: "First Trump term", d: "Enforcement tightens nationwide. Start of study period." },
   { date: "2020", t: "COVID-19", d: "Farmworkers labeled essential. Framing briefly sympathetic." },
-  { date: "Jan 2025", t: "Mass deportation ops", d: "CA ag labor −40%. FCOJ −35%. Produce prices +5–12%.", hot: true },
+  { date: "Jan 2025", t: "Mass deportation ops", d: "CA ag labor −40%. Produce prices +5–12%. Harvests rot.", hot: true },
 ];
 
 const WORKFORCE = [
@@ -34,11 +34,20 @@ const WORKFORCE = [
   { name: "US-born", value: 39, color: "#1a3a5c" },
 ];
 
+const DOMINO = [
+  { label: "Framing",  desc: "Enforcement language rises online.",                 ex: "Pro-enforcement share +10 pts" },
+  { label: "Policy",   desc: "Federal enforcement escalates.",                      ex: "Jan 2025: mass deportation ops" },
+  { label: "Labor",    desc: "Workforces collapse in weeks.",                       ex: "CA farm labor −40% overnight" },
+  { label: "Farms",    desc: "Harvests rot. Family farms lose the season.",         ex: "$3–7B in crop losses" },
+  { label: "Prices",   desc: "Cost gets passed to the register.",                   ex: "Produce +5–12% after raids" },
+  { label: "Families", desc: "Working-class households absorb the hit, both ways.", ex: "The hands that pick go hungry" },
+];
+
 const RECS = [
-  { who: "Farmers", short: "Plan for election-cycle labor volatility.", long: "Enforcement costs are priced in weeks before policy hits. Workforce planning needs political calendar risk, not just weather." },
-  { who: "Policymakers", short: "Markets price raids before they happen.", long: "Ignoring that turns every enforcement action into a quiet tax on consumers." },
-  { who: "Voters", short: "Look past how platforms frame it.", long: "Ask what the underlying policy does to food supply, labor, and grocery prices. Framing shifts before facts do." },
-  { who: "Media", short: "Word choice compounds.", long: "Small vocabulary shifts (3.6% → 9% enforcement framing) reshape opinion over a decade." },
+  { who: "Farmers",      short: "A lost harvest isn't volatility — it's a closed farm.", long: "88% of US farms are family-owned, median operator age 58. Labor disruption isn't a line-item risk — it's existential. Planning needs to account for political cycles the way it already does for weather cycles." },
+  { who: "Policymakers", short: "The cost of enforcement lands on the poorest households.", long: "When produce prices climb and farms fail, the hit doesn't fall on the people making the policy. It falls on the families picking the crops and the families buying the groceries — often the same families." },
+  { who: "Voters",       short: "The food on your table was picked by someone going hungry.", long: "Up to 82% of farmworker families are food insecure. 1.1–1.9 million people who grow America's food don't know where their next meal will come from. Ask what a policy actually does to them." },
+  { who: "Media",        short: "Small vocabulary shifts compound into decades of opinion.", long: "Terms like \u201Cmass deportation\u201D grew from 3.6% to 9% of farm coverage across five political eras. Framing doesn't just describe the story — it becomes the story for the readers who encounter it." },
 ];
 
 const SOURCES = [
@@ -46,6 +55,9 @@ const SOURCES = [
   "USDA ERS. Fruit and Tree Nuts Outlook, FTS-382 (2025).",
   "USDA ERS. Legal status of hired crop farmworkers, 1991–2022.",
   "National Center for Farmworker Health. Facts about farmworkers (2023).",
+  "Reznickova, A. Union of Concerned Scientists. How Many Farmworkers Are Food Insecure? (2023).",
+  "Farmworker Justice. Hunger amidst plenty: Food assistance in farmworker communities (2016).",
+  "National Farm Worker Ministry. Harvest of Justice: Farm Workers & Food Justice (2021).",
   "KFF. Immigration restrictions on the U.S. agricultural workforce (2025).",
   "Kostandini, Mykerezi & Escalante. AJAE 96(1), 172–192 (2014).",
   "Martin, P. Immigration and farm labor. Giannini Foundation (2024).",
@@ -57,7 +69,7 @@ const SOURCES = [
 ];
 
 // ============================================================
-// STYLE TOKENS
+// STYLE
 // ============================================================
 
 const C = {
@@ -74,8 +86,8 @@ const C = {
 };
 
 const serif = { fontFamily: 'Fraunces, "Iowan Old Style", Palatino, Georgia, serif' };
-const sans = { fontFamily: 'DM Sans, "Helvetica Neue", system-ui, sans-serif' };
-const mono = { fontFamily: 'JetBrains Mono, "SF Mono", Monaco, Consolas, monospace' };
+const sans  = { fontFamily: 'DM Sans, "Helvetica Neue", system-ui, sans-serif' };
+const mono  = { fontFamily: 'JetBrains Mono, "SF Mono", Monaco, Consolas, monospace' };
 
 // ============================================================
 // PRIMITIVES
@@ -85,8 +97,8 @@ function SectionHeading({ children, kicker }) {
   return (
     <div style={{ marginBottom: 10 }}>
       {kicker && (
-        <div style={{ ...mono, fontSize: 8, letterSpacing: "0.2em", color: C.terra, marginBottom: 2 }}>
-          {kicker.toUpperCase()}
+        <div style={{ ...mono, fontSize: 8, letterSpacing: "0.2em", color: C.terra, marginBottom: 2, textTransform: "uppercase" }}>
+          {kicker}
         </div>
       )}
       <div style={{ ...serif, fontSize: 18, fontWeight: 600, color: C.navy, lineHeight: 1.1, letterSpacing: "-0.01em" }}>
@@ -97,20 +109,18 @@ function SectionHeading({ children, kicker }) {
   );
 }
 
-function FigCaption({ num, title, src }) {
-  return (
-    <div style={{ ...mono, fontSize: 8, color: C.muted, letterSpacing: "0.04em", marginTop: 4, lineHeight: 1.3 }}>
-      <span style={{ color: C.terra, fontWeight: 500 }}>Fig. {num}</span> · {title}
-      {src && <span style={{ fontStyle: "italic" }}> · {src}</span>}
-    </div>
-  );
-}
-
 function Fig({ src, alt, num, title, source }) {
   return (
-    <div style={{ background: C.panel, border: `1px solid ${C.rule}`, padding: 8, marginBottom: 10 }}>
-      <img src={src} alt={alt} style={{ width: "100%", height: "auto", display: "block" }} />
-      <FigCaption num={num} title={title} src={source} />
+    <div style={{ background: C.panel, border: `1px solid ${C.rule}`, padding: 10, marginBottom: 12 }}>
+      <img
+        src={src}
+        alt={alt}
+        style={{ width: "100%", height: "auto", display: "block", objectFit: "contain" }}
+      />
+      <div style={{ ...mono, fontSize: 9, color: C.muted, letterSpacing: "0.04em", marginTop: 6, lineHeight: 1.35 }}>
+        <span style={{ color: C.terra, fontWeight: 500 }}>Fig. {num}</span> · {title}
+        {source && <span style={{ fontStyle: "italic" }}> · {source}</span>}
+      </div>
     </div>
   );
 }
@@ -181,177 +191,156 @@ export default function App() {
           ))}
         </div>
 
-        {/* ============ 4-COLUMN BODY ============ */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1.2fr 1.2fr 1fr", gap: 0, padding: "24px 40px", borderBottom: `1px solid ${C.rule}` }}>
+        {/* ============ 3-COLUMN BODY ============ */}
+        <div style={{ display: "grid", gridTemplateColumns: "0.9fr 1.5fr 1.2fr", gap: 0, padding: "24px 40px", borderBottom: `1px solid ${C.rule}` }}>
 
-          {/* ----- COLUMN 1 : SCOPE ----- */}
-          <div style={{ paddingRight: 20, borderRight: `1px solid ${C.rule}` }}>
+          {/* ----- COLUMN 1 : SCOPE / METHODS / TIMELINE ----- */}
+          <div style={{ paddingRight: 24, borderRight: `1px solid ${C.rule}` }}>
             <SectionHeading kicker="01 · Scope">Project Scope</SectionHeading>
-            <p style={{ fontSize: 11, lineHeight: 1.5, color: C.ink, margin: "0 0 12px" }}>
-              Three independent analyses of the same question: how U.S. migrant farm labor shapes economic trends, policy, and public discourse from 2010 to 2026.
-              The team combined news framing from MediaCloud, Reddit/Facebook stance classification via Claude Haiku, and agricultural commodity futures event studies.
+            <p style={{ fontSize: 11.5, lineHeight: 1.55, color: C.ink, margin: "0 0 14px" }}>
+              Three independent analyses of one question: how U.S. migrant farm labor shapes the food supply, the policy that moves around it, and the cost that hits working-class families.
+              Methods combined news framing from MediaCloud, Reddit/Facebook stance classification via Claude Haiku, and commodity event studies from 2010 to 2026.
             </p>
 
             <SectionHeading kicker="02 · Methods">Methods</SectionHeading>
-            <ul style={{ fontSize: 10.5, lineHeight: 1.45, color: C.ink, margin: "0 0 12px", paddingLeft: 14 }}>
+            <ul style={{ fontSize: 10.5, lineHeight: 1.5, color: C.ink, margin: "0 0 14px", paddingLeft: 14 }}>
               <li><b>News framing:</b> ~3k articles tagged pre-Trump → Trump II.</li>
-              <li><b>Stance:</b> 3,000 Reddit posts classified pro-enforce / pro-labor / mixed.</li>
+              <li><b>Stance:</b> 3,000 Reddit posts classified pro-enforcement / pro-labor / mixed.</li>
               <li><b>Topic prevalence:</b> 8 keyword cohorts, annual share 2010–2025.</li>
               <li><b>Markets:</b> event-window returns on FCOJ, sugar, milk, coffee, cattle, cotton.</li>
-              <li><b>Sensitivity:</b> labor-exposure index × discourse correlation.</li>
+              <li><b>Human impact:</b> triangulated USDA ERS, NCFH, NAWS, UCS, Farmworker Justice.</li>
             </ul>
 
             <SectionHeading kicker="03 · Context">A Century of Labor Policy</SectionHeading>
-            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
               {TIMELINE.map((t, i) => (
-                <div key={i} style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
+                <div key={i} style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
                   <div style={{
                     flexShrink: 0, width: 8, height: 8, borderRadius: "50%",
                     background: t.hot ? C.terra : C.navy2,
                     boxShadow: t.hot ? `0 0 0 3px rgba(200,80,43,0.2)` : "none",
-                    marginTop: 5,
+                    marginTop: 6,
                   }} />
                   <div>
                     <div style={{ ...mono, fontSize: 9, color: C.terra, letterSpacing: "0.05em" }}>{t.date}</div>
                     <div style={{ ...serif, fontSize: 12, fontWeight: 600, color: C.navy, lineHeight: 1.15 }}>{t.t}</div>
-                    <div style={{ fontSize: 10, lineHeight: 1.35, color: C.ink }}>{t.d}</div>
+                    <div style={{ fontSize: 10, lineHeight: 1.4, color: C.ink }}>{t.d}</div>
                   </div>
                 </div>
               ))}
             </div>
           </div>
 
-          {/* ----- COLUMN 2 : DISCOURSE (David) ----- */}
-          <div style={{ padding: "0 20px", borderRight: `1px solid ${C.rule}` }}>
-            <SectionHeading kicker="Finding 1 · David Park">Discourse shifted years before policy did.</SectionHeading>
-            <p style={{ fontSize: 11, lineHeight: 1.5, color: C.ink, margin: "0 0 12px" }}>
-              News-side framing held steady from 2010 through early 2024 — enforcement-framed coverage ranged only 2.5% → 9% across five eras.
-              Social media moved sharper and earlier: Reddit pro-enforcement stance jumped from 17.9% pre-Trump to 26–27% in both Trump terms.
-              Topic prevalence tells the cleanest story: “deportation” peaked at <b>34.7% of 2025 discourse</b>, “essential” peaked at 33.4% in 2020 — the vocabulary tracks the political regime.
+          {/* ----- COLUMN 2 : DISCOURSE + MARKETS (David) ----- */}
+          <div style={{ padding: "0 24px", borderRight: `1px solid ${C.rule}` }}>
+            <SectionHeading kicker="Finding 1 · David Park">The narrative shifts. Working families pay the bill.</SectionHeading>
+            <p style={{ fontSize: 11.5, lineHeight: 1.55, color: C.ink, margin: "0 0 10px" }}>
+              Pro-enforcement framing on social platforms jumped 10 points between Obama and Trump. Reddit pro-enforcement stance moved from 17.9% pre-Trump to 26–27% in both Trump terms. Terms like <b>"mass deportation"</b> grew from 3.6% to 9% of farm coverage. The story changed online before the policy did.
             </p>
 
             <Fig
-              src="/figures/panel1_language.png"
-              alt="News framing by era"
-              num="1a"
-              title="News framing, pre-Trump → Trump II"
-              source="MediaCloud · n≈3k articles"
+              src="/figures/panel2_stance.png"
+              alt="Reddit stance over time"
+              num="1"
+              title="Reddit stance on migrant farm labor, 2015–2026"
+              source="project scrape · Haiku classification, n=3,000"
             />
-            <Fig
-              src="/figures/panel3_topic.png"
-              alt="Topic prevalence timeline"
-              num="1b"
-              title="Topic prevalence, 2010–2025"
-              source="project scrape"
-            />
-          </div>
 
-          {/* ----- COLUMN 3 : MARKETS (David) ----- */}
-          <div style={{ padding: "0 20px", borderRight: `1px solid ${C.rule}` }}>
-            <SectionHeading kicker="Finding 2 · David Park">Markets priced it in before the news ran it.</SectionHeading>
-            <p style={{ fontSize: 11, lineHeight: 1.5, color: C.ink, margin: "0 0 12px" }}>
-              FCOJ futures dropped <b>−35.4%</b> in the 30 days after Jan 2025 deportation ops — the largest single event-window shift in the dataset.
-              The effect scales with labor exposure: FCOJ (exposure 0.95) shows the strongest negative correlation with enforcement framing; coffee (0.90 global, but US-policy-insensitive) shows zero correlation — a clean falsification check.
-              Corn and soybeans, fully mechanized, move with macro noise only.
+            <p style={{ fontSize: 11.5, lineHeight: 1.55, color: C.ink, margin: "14px 0 10px" }}>
+              Markets moved too. Orange juice futures dropped 35% that same winter — most of that was Brazilian supply recovery, not U.S. enforcement. But that's the point: <b>hedge funds can price in a coming shock. A family at the grocery store can't.</b> When produce prices climbed after the raids, working-class households ate the cost. When family farms lost harvests, no one covered the loss.
             </p>
 
             <Fig
               src="/figures/assignment_fcoj_deep_dive.png"
-              alt="FCOJ deep dive"
-              num="2a"
-              title="FCOJ event-window returns, Dec 2024 – Feb 2025"
-              source="Yahoo Finance OJ=F"
-            />
-            <Fig
-              src="/figures/assignment_sensitivity_scatter.png"
-              alt="Labor exposure vs discourse correlation"
-              num="2b"
-              title="Labor exposure × discourse sensitivity"
-              source="project event study"
+              alt="FCOJ vs news enforcement framing 2010–2026"
+              num="2"
+              title="FCOJ (orange juice) vs U.S. news enforcement framing, 2010–2026"
+              source="Yahoo Finance OJ=F + MediaCloud · honest read: correlation, not causation"
             />
           </div>
 
-          {/* ----- COLUMN 4 : WORKFORCE (Sydney) + YIELDS (Ella) ----- */}
-          <div style={{ paddingLeft: 20 }}>
-            <SectionHeading kicker="Finding 3 · Sydney Beiting">Immigrants are the workforce, not a supplement.</SectionHeading>
-            <p style={{ fontSize: 11, lineHeight: 1.5, color: C.ink, margin: "0 0 10px" }}>
-              USDA 2022 data shows <b>42%</b> undocumented + <b>19%</b> documented immigrants = 61% of the U.S. farm workforce. 78% self-identify as Hispanic, 63% from Mexico.
-              20% of farmworker families live below the federal poverty line; a North Carolina housing study found 78% of farmworker households in crowded conditions regardless of whether the unit meets code.
+          {/* ----- COLUMN 3 : WORKFORCE + YIELDS (Sydney + Ella) ----- */}
+          <div style={{ paddingLeft: 24 }}>
+            <SectionHeading kicker="Finding 2 · Sydney Beiting">The hands that pick America's food can't afford to buy it.</SectionHeading>
+            <p style={{ fontSize: 11.5, lineHeight: 1.55, color: C.ink, margin: "0 0 8px" }}>
+              <b>61%</b> of the U.S. farm workforce is immigrant. 78% self-identify as Hispanic; 63% are from Mexico. Average farmworker family income sits between <b>$17.5–20k</b> — below the federal poverty line for a family of four.
+            </p>
+            <p style={{ fontSize: 11.5, lineHeight: 1.55, color: C.ink, margin: "0 0 12px" }}>
+              Between <b>1.1 and 1.9 million</b> farmworkers and their children don't know where their next meal will come from. They die from heat-related illness at rates 20% higher than workers in other industries. 78% live in crowded housing regardless of whether the unit meets code.
             </p>
 
-            <div style={{ background: C.panel, border: `1px solid ${C.rule}`, padding: 8, marginBottom: 10, height: 170 }}>
+            <div style={{ background: C.panel, border: `1px solid ${C.rule}`, padding: 10, marginBottom: 8, height: 210 }}>
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
-                  <Pie data={WORKFORCE} dataKey="value" cx="38%" cy="50%" innerRadius={35} outerRadius={65} paddingAngle={2} strokeWidth={2} stroke="#faf6ec">
+                  <Pie data={WORKFORCE} dataKey="value" cx="38%" cy="50%" innerRadius={44} outerRadius={82} paddingAngle={2} strokeWidth={2} stroke="#faf6ec">
                     {WORKFORCE.map((e, i) => <Cell key={i} fill={e.color}/>)}
                   </Pie>
                   <Legend
                     layout="vertical" verticalAlign="middle" align="right" iconType="square"
-                    wrapperStyle={{ fontFamily: "DM Sans", fontSize: 10, paddingRight: 4 }}
+                    wrapperStyle={{ fontFamily: "DM Sans", fontSize: 11, paddingRight: 8 }}
                     formatter={(v, e) => <span style={{ color: C.ink }}>{v}: {e.payload.value}%</span>}
                   />
                 </PieChart>
               </ResponsiveContainer>
             </div>
-            <FigCaption num="3" title="US farm workforce composition, 2022" src="USDA ERS" />
-
-            <div style={{ marginTop: 16 }}>
-              <SectionHeading kicker="Finding 4 · Ella Russell">When deportations rise, yields fall.</SectionHeading>
-              <p style={{ fontSize: 11, lineHeight: 1.5, color: C.ink, margin: "0 0 10px" }}>
-                With 40–50% of the produce workforce undocumented, 2025 California ICE raids cut farm labor up to 40% overnight. Outcome: <b>$3–7B</b> in crop losses and a 5–12% retail produce price jump. Farmers and consumers both absorb the cost.
-              </p>
-              <Fig
-                src="/figures/assignment_event_waterfall.png"
-                alt="Event-window returns by ticker"
-                num="4"
-                title="Event-window returns across commodities"
-                source="project event study"
-              />
+            <div style={{ ...mono, fontSize: 9, color: C.muted, letterSpacing: "0.04em", marginBottom: 18 }}>
+              <span style={{ color: C.terra, fontWeight: 500 }}>Fig. 3</span> · U.S. farm workforce composition, 2022 · <span style={{ fontStyle: "italic" }}>USDA ERS</span>
             </div>
+
+            <SectionHeading kicker="Finding 3 · Ella Russell">When deportations rise, harvests rot.</SectionHeading>
+            <p style={{ fontSize: 11.5, lineHeight: 1.55, color: C.ink, margin: "0 0 8px" }}>
+              You can't pick produce without pickers. The 2025 California raids cut farm labor up to <b>40%</b> overnight: strawberries stayed on vines, citrus fell unpicked, <b>$3–7B</b> in crop losses within a single quarter, produce prices jumped <b>5–12%</b> at the register.
+            </p>
+            <p style={{ fontSize: 11.5, lineHeight: 1.55, color: C.ink, margin: 0 }}>
+              For family farms — 88% of U.S. farms, median operator age 58 — this isn't volatility. It's existential. A single lost harvest can end a generational operation. And the 5–12% produce price jump lands on working-class grocery shoppers who had nothing to do with the policy.
+            </p>
           </div>
         </div>
 
         {/* ============ CONCLUSIONS + RECS + BIBLIO STRIP ============ */}
         <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1.2fr 1fr", gap: 0, padding: "20px 40px", borderBottom: `1px solid ${C.rule}` }}>
 
-          <div style={{ paddingRight: 20, borderRight: `1px solid ${C.rule}` }}>
-            <SectionHeading kicker="Conclusions">Not a political story. A chain reaction.</SectionHeading>
-            <p style={{ fontSize: 11, lineHeight: 1.5, color: C.ink, margin: "0 0 8px" }}>
-              Policy moves markets. Markets move framing. Framing moves opinion. Opinion moves the next policy.
-              The chain is directional and, on this dataset, measurable: FCOJ drops within weeks of enforcement action; Reddit stance shifts lead mainstream news framing by 6–12 months; labor-exposed commodities move on labor-specific political news while mechanized ones do not.
+          <div style={{ paddingRight: 24, borderRight: `1px solid ${C.rule}` }}>
+            <SectionHeading kicker="Conclusions">Six steps. Same people at the bottom.</SectionHeading>
+            <p style={{ fontSize: 11.5, lineHeight: 1.55, color: C.ink, margin: "0 0 10px" }}>
+              A framing shift online becomes an enforcement policy, becomes a rotting harvest, becomes a grocery-bill increase — and every step lands on the same working-class households. Policy, markets, and media circle back. The bill does not.
             </p>
-            <div style={{ display: "flex", gap: 4, alignItems: "center", flexWrap: "wrap", marginTop: 8 }}>
-              {["Policy","Markets","Framing","News","Prices","People"].map((step, i, a) => (
-                <div key={i} style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                  <span style={{
-                    ...mono, fontSize: 9, letterSpacing: "0.08em",
-                    padding: "4px 8px",
-                    background: i === a.length-1 ? C.terra : C.navy,
-                    color: "#fff",
-                    textTransform: "uppercase",
-                  }}>{step}</span>
-                  {i < a.length-1 && <span style={{ color: C.terra }}>→</span>}
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 6, marginTop: 8 }}>
+              {DOMINO.map((d, i) => (
+                <div key={i} style={{
+                  background: i === DOMINO.length - 1 ? C.terra : C.navy,
+                  color: "#fff",
+                  padding: "8px 10px",
+                  position: "relative",
+                }}>
+                  <div style={{ ...mono, fontSize: 8, letterSpacing: "0.15em", opacity: 0.6, textTransform: "uppercase" }}>Step {i+1}</div>
+                  <div style={{ ...serif, fontSize: 14, fontWeight: 600, marginTop: 2, marginBottom: 4 }}>{d.label}</div>
+                  <div style={{ fontSize: 9.5, lineHeight: 1.35, opacity: 0.92 }}>{d.desc}</div>
+                  <div style={{ ...mono, fontSize: 8, color: i === DOMINO.length - 1 ? "#fff" : C.terra, marginTop: 5, letterSpacing: "0.03em" }}>{d.ex}</div>
                 </div>
               ))}
             </div>
           </div>
 
-          <div style={{ padding: "0 20px", borderRight: `1px solid ${C.rule}` }}>
+          <div style={{ padding: "0 24px", borderRight: `1px solid ${C.rule}` }}>
             <SectionHeading kicker="Recommendations">What to do about it</SectionHeading>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
               {RECS.map((r, i) => (
-                <div key={i} style={{ borderLeft: `2px solid ${C.terra}`, paddingLeft: 8 }}>
+                <div key={i} style={{ borderLeft: `2px solid ${C.terra}`, paddingLeft: 10 }}>
                   <div style={{ ...mono, fontSize: 8, letterSpacing: "0.15em", color: C.terra, textTransform: "uppercase" }}>For {r.who}</div>
                   <div style={{ ...serif, fontSize: 12, fontWeight: 600, color: C.navy, lineHeight: 1.2, margin: "2px 0 3px" }}>{r.short}</div>
-                  <div style={{ fontSize: 9.5, lineHeight: 1.4, color: C.ink }}>{r.long}</div>
+                  <div style={{ fontSize: 9.5, lineHeight: 1.45, color: C.ink }}>{r.long}</div>
                 </div>
               ))}
             </div>
+            <p style={{ ...serif, fontStyle: "italic", fontSize: 13, lineHeight: 1.4, color: C.navy, margin: "14px 0 0", paddingTop: 10, borderTop: `1px solid ${C.rule}` }}>
+              Policy moves markets. Markets move framing. Framing moves opinion. Opinion moves the next policy. But the bill lands in one place — <span style={{ fontStyle: "normal", color: C.terra }}>on the families who pick America's food, grow America's food, and can't afford to buy it.</span>
+            </p>
           </div>
 
-          <div style={{ paddingLeft: 20 }}>
+          <div style={{ paddingLeft: 24 }}>
             <SectionHeading kicker="Bibliography">Bibliography</SectionHeading>
-            <ol style={{ ...mono, fontSize: 8.5, lineHeight: 1.45, color: C.ink, margin: 0, paddingLeft: 18 }}>
+            <ol style={{ ...mono, fontSize: 8.5, lineHeight: 1.5, color: C.ink, margin: 0, paddingLeft: 18 }}>
               {SOURCES.map((s, i) => <li key={i} style={{ marginBottom: 3 }}>{s}</li>)}
             </ol>
           </div>
@@ -374,7 +363,6 @@ export default function App() {
 
       </div>
 
-      {/* print helpers */}
       <style>{`
         @media print {
           body { background: #fff !important; }
@@ -387,7 +375,7 @@ export default function App() {
 }
 
 // ============================================================
-// OSU BLOCK O (SVG approximation)
+// OSU BLOCK O (simplified SVG placeholder)
 // ============================================================
 
 function OsuBlockO() {
