@@ -22,11 +22,11 @@ const FIG1_DATA = [
 
 const STATS = [
   { num: "40–50%", label: "of US farmworkers are undocumented", src: "USDA ERS" },
-  { num: "$3–7B", label: "crop losses, 2025 CA ICE raids", src: "USDA FTS-382" },
-  { num: "5–12%", label: "produce price jump after the raids", src: "FreshFruitPortal" },
-  { num: "8×", label: "farmworker families more food-insecure than the public", src: "UCS · NAWS" },
-  { num: "$17.5k", label: "average farmworker family annual income", src: "Farmworker Justice" },
-  { num: "1.9M", label: "farmworkers + kin unsure of their next meal", src: "UCS, 2023" },
+  { num: "$3–7B", label: "crop losses, 2025 CA ICE raids", src: "trade press, early 2025" },
+  { num: "5–12%", label: "produce price jump after the raids", src: "FreshFruitPortal, early 2025" },
+  { num: "5–8×", label: "farmworker families more food-insecure than the public", src: "UCS · NAWS" },
+  { num: "20%", label: "of farmworker families below the poverty line", src: "NAWS 2019–20" },
+  { num: "1.1–1.9M", label: "farmworkers + kin unsure of their next meal", src: "UCS, 2023" },
 ];
 
 const TIMELINE = [
@@ -54,7 +54,7 @@ const DOMINO = [
 ];
 
 const RECS = [
-  { who: "Farmers",      short: "A lost harvest isn't volatility. It's a closed farm.", long: "88% of US farms are family-owned, median operator age 58. Labor disruption isn't a line-item risk. It's existential. Planning needs to account for political cycles the way it already does for weather cycles." },
+  { who: "Farmers",      short: "A lost harvest isn't volatility. It's a closed farm.", long: "97% of US farms are family-owned, median operator age 58. Labor disruption isn't a line-item risk. It's existential. Planning needs to account for political cycles the way it already does for weather cycles." },
   { who: "Policymakers", short: "The cost of enforcement lands on the poorest households.", long: "When produce prices climb and farms fail, the hit doesn't fall on the people making the policy. It falls on the families picking the crops and the families buying the groceries, often the same families." },
   { who: "Voters",       short: "The food on your table was picked by someone going hungry.", long: "Up to 82% of farmworker families are food insecure. 1.1 to 1.9 million people who grow America's food don't know where their next meal will come from. Ask what a policy actually does to them." },
   { who: "Media",        short: "Small vocabulary shifts compound into decades of opinion.", long: "Terms like \u201Cmass deportation\u201D grew from 3.6% to 9% of farm coverage across five political eras. Framing doesn't just describe the story. It becomes the story for the readers who encounter it." },
@@ -328,10 +328,10 @@ export default function App() {
           <div style={{ paddingLeft: 24 }}>
             <SectionHeading kicker="Finding 2 · Sydney Beiting">The hands that pick America's food can't afford to buy it.</SectionHeading>
             <p style={{ fontSize: 12.5, lineHeight: 1.5, color: C.ink, margin: "0 0 8px" }}>
-              <b>61%</b> of the U.S. farm workforce is immigrant. 78% self-identify as Hispanic; 63% are from Mexico. Average farmworker family income sits between <b>$17.5k and $20k</b>, below the federal poverty line for a family of four.
+              <b>61%</b> of the U.S. farm workforce is immigrant. 78% self-identify as Hispanic; 63% are from Mexico. <b>20%</b> of farmworker families live below the federal poverty line, and farmworker households experience food insecurity at rates 5 to 8 times the general public.
             </p>
             <p style={{ fontSize: 12.5, lineHeight: 1.5, color: C.ink, margin: "0 0 10px" }}>
-              Between <b>1.1 and 1.9 million</b> farmworkers and their children don't know where their next meal will come from. They die from heat-related illness at rates 20% higher than workers in other industries. 78% live in crowded housing regardless of whether the unit meets code.
+              Between <b>1.1 and 1.9 million</b> farmworkers and their children don't know where their next meal will come from. They die from heat-related illness at rates up to <b>20 times higher</b> than workers in other industries. 78% live in crowded housing regardless of whether the unit meets code.
             </p>
 
             <div style={{ background: C.panel, border: `1px solid ${C.rule}`, padding: 8, marginBottom: 6, height: 180 }}>
@@ -357,7 +357,7 @@ export default function App() {
               You can't pick produce without pickers. The 2025 California raids cut farm labor up to <b>40%</b> overnight: strawberries stayed on vines, citrus fell unpicked, <b>$3–7B</b> in crop losses within a single quarter, produce prices jumped <b>5–12%</b> at the register.
             </p>
             <p style={{ fontSize: 12.5, lineHeight: 1.5, color: C.ink, margin: 0 }}>
-              For family farms, which are 88% of U.S. farms with a median operator age of 58, this isn't volatility. It's existential. A single lost harvest can end a generational operation. And the 5–12% produce price jump lands on working-class grocery shoppers who had nothing to do with the policy.
+              For family farms, which make up <b>97%</b> of U.S. farms with a median operator age of 58, this isn't volatility. It's existential. A single lost harvest can end a generational operation. And the 5–12% produce price jump lands on working-class grocery shoppers who had nothing to do with the policy.
             </p>
           </div>
         </div>
